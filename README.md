@@ -8,6 +8,8 @@ A multipurpose header-only C library
 wget https://raw.githubusercontent.com/KDesp73/clib.h/main/clib.h
 ```
 
+## LICENSE
+
 [LICENSE](./LICENSE)
 
 ## Author
