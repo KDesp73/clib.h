@@ -59,7 +59,9 @@ Cstr cstr_array_join(Cstr sep, CstrArray cstrs);
 
 #define true 1
 #define false 0
+#define BOOL(x) x ? "true" : "false"
 
+// ANSI
 #define RESET "\e[0;39m"
 #define BOLD "\e[1m"
 #define UNDERLINE "\033[4m"
@@ -73,16 +75,28 @@ Cstr color(int color, int bg);
 void clearScreen();
 void print_color_table();
 
-char* shift_args(int *argc, char ***argv);
-
 #define COLOR_BG(c) color(c, 1)
 #define COLOR_FG(c) color(c, 0)
 
+// FILES
+void create_file(const char *filename);
+void write_file(const char *filename, const char *data);
+char* read_file(const char *filename);
+void delete_file(const char *filename);
+void append_file(const char *filename, const char *data);
+void copy_file(const char *source, const char *destination);
+void move_file(const char *source, const char *destination);
+long file_size(const char *filename);
+int file_exists(const char *filename);
+
+// UTILS
+char* shift_args(int *argc, char ***argv);
 #define ITOA(s, i) sprintf(s, "%d", i);
 #define JOIN(sep, ...) cstr_array_join(sep, cstr_array_make(__VA_ARGS__, NULL))
 #define CONCAT(...) JOIN("", __VA_ARGS__)
 #define PATH(...) JOIN(PATH_SEP, __VA_ARGS__)
 
+// LOGGING
 #define LOG(stream, type, format, ...) \
     fprintf(stream, CONCAT("[%s] ", format, "\n"), type, ##__VA_ARGS__)
 
@@ -194,7 +208,7 @@ char* shift_args(int *argc, char ***argv) {
 Cstr color(int color, int bg) {
     if (color < 0 || color > 255) return "";
 
-    char where_code[4], color_string[4];
+    char where_code[12], color_string[12];
     ITOA(where_code, bg + 3);
     ITOA(color_string, color);
 
@@ -217,6 +231,141 @@ void print_color_table(){
         printf("%s%3d ", color(i, 0), i);
     }
     printf("%s\n", RESET);
+}
+
+
+void copy_file(const char *source, const char *destination) {
+    FILE *srcFile = fopen(source, "r");
+    if (srcFile == NULL) {
+        perror("Error opening source file");
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *destFile = fopen(destination, "w");
+    if (destFile == NULL) {
+        perror("Error opening destination file");
+        fclose(srcFile);
+        exit(EXIT_FAILURE);
+    }
+
+    char buffer[256];
+    size_t bytesRead;
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), srcFile)) > 0) {
+        if (fwrite(buffer, 1, bytesRead, destFile) != bytesRead) {
+            perror("Error writing to destination file");
+            fclose(srcFile);
+            fclose(destFile);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    fclose(srcFile);
+    fclose(destFile);
+}
+
+void move_file(const char *source, const char *destination) {
+    if (rename(source, destination) != 0) {
+        perror("Error moving/renaming file");
+        exit(EXIT_FAILURE);
+    }
+}
+
+long file_size(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fclose(file);
+    return size;
+}
+
+int file_exists(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file != NULL) {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
+void append_file(const char *filename, const char *data) {
+    FILE *file = fopen(filename, "a");
+    if (file == NULL) {
+        perror("Error opening file for appending");
+        exit(EXIT_FAILURE);
+    }
+    if (fputs(data, file) == EOF) {
+        perror("Error appending to file");
+        fclose(file);
+        exit(EXIT_FAILURE);
+    }
+    fclose(file);
+}
+
+void create_file(const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error creating file");
+        exit(EXIT_FAILURE);
+    }
+    fclose(file);
+}
+
+void write_file(const char *filename, const char *data) {
+    FILE *file = fopen(filename, "a");
+    if (file == NULL) {
+        perror("Error opening file for writing");
+        exit(EXIT_FAILURE);
+    }
+    if (fputs(data, file) == EOF) {
+        perror("Error writing to file");
+        fclose(file);
+        exit(EXIT_FAILURE);
+    }
+    fclose(file);
+}
+
+char* read_file(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file for reading");
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *buffer = (char*)malloc(file_size + 1);
+    if (buffer == NULL) {
+        perror("Error allocating memory");
+        fclose(file);
+        return NULL;
+    }
+
+    size_t bytesRead = fread(buffer, 1, file_size, file);
+    if (bytesRead != file_size) {
+        perror("Error reading file");
+        free(buffer);
+        fclose(file);
+        return NULL;
+    }
+
+    buffer[file_size] = '\0';
+
+    fclose(file);
+    return buffer;
+}
+
+void delete_file(const char *filename) {
+    if (remove(filename) != 0) {
+        perror("Error deleting file");
+        exit(EXIT_FAILURE);
+    }
 }
 #endif // CLIB_IMPLEMENTATION
 // END [IMPLEMENTATIONS] END//
