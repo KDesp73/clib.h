@@ -78,6 +78,18 @@ void print_color_table();
 #define COLOR_BG(c) color(c, 1)
 #define COLOR_FG(c) color(c, 0)
 
+// SYSTEM
+char* execute_command(const char* command);
+char* get_env(const char* varname);
+int set_env(const char* varname, const char* value, int overwrite);
+int unset_env(const char* varname);
+
+// MEMORY
+void* safe_malloc(size_t size);
+void* safe_calloc(size_t nmemb, size_t size);
+void* safe_realloc(void *ptr, size_t size);
+void safe_free(void **ptr);
+
 // FILES
 void create_file(const char *filename);
 void write_file(const char *filename, const char *data);
@@ -90,6 +102,25 @@ long file_size(const char *filename);
 int file_exists(const char *filename);
 
 // UTILS
+#define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
+#define SWAP(x, y) do { \
+    typeof(x) temp = x; \
+    x = y; \
+    y = temp; \
+} while (0)
+
+#if defined(__GNUC__) || defined(__clang__)
+    #define LIKELY(x) __builtin_expect(!!(x), 1)
+#else
+    #define LIKELY(x) (x)
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+    #define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+    #define UNLIKELY(x) (x)
+#endif
+
 char* shift_args(int *argc, char ***argv);
 #define ITOA(s, i) sprintf(s, "%d", i);
 #define JOIN(sep, ...) cstr_array_join(sep, cstr_array_make(__VA_ARGS__, NULL))
@@ -367,6 +398,77 @@ void delete_file(const char *filename) {
         exit(EXIT_FAILURE);
     }
 }
+
+void* safe_malloc(size_t size) {
+    void *ptr = malloc(size);
+    if (ptr == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+    return ptr;
+}
+
+void* safe_calloc(size_t nmemb, size_t size) {
+    void *ptr = calloc(nmemb, size);
+    if (ptr == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+    return ptr;
+}
+
+void* safe_realloc(void *ptr, size_t size) {
+    void *new_ptr = realloc(ptr, size);
+    if (new_ptr == NULL) {
+        fprintf(stderr, "Memory reallocation error\n");
+        exit(EXIT_FAILURE);
+    }
+    return new_ptr;
+}
+
+void safe_free(void **ptr) {
+    if (ptr != NULL && *ptr != NULL) {
+        free(*ptr);
+        *ptr = NULL;
+    }
+}
+
+char* execute_command(const char* command) {
+    char buffer[128];
+    char *result = NULL;
+    size_t result_size = 0;
+    FILE *pipe = popen(command, "r");
+    if (!pipe) {
+        return NULL;
+    }
+
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        size_t buffer_len = strlen(buffer);
+        result = realloc(result, result_size + buffer_len + 1);
+        if (!result) {
+            pclose(pipe);
+            return NULL;
+        }
+        strcpy(result + result_size, buffer);
+        result_size += buffer_len;
+    }
+
+    pclose(pipe);
+    return result;
+}
+
+char* get_env(const char* varname) {
+    return getenv(varname);
+}
+
+int set_env(const char* varname, const char* value, int overwrite) {
+    return setenv(varname, value, overwrite);
+}
+
+int unset_env(const char* varname) {
+    return unsetenv(varname);
+}
+
 #endif // CLIB_IMPLEMENTATION
 // END [IMPLEMENTATIONS] END//
 
