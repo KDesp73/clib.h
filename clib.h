@@ -20,12 +20,24 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- * Usage: 
- * #define CLIB_IMPLEMENTATION
- * #inlcude "clib.h"
 */
 
+
+/*
+ * Usage: 
+ * #define CLIB_IMPLEMENTATION
+ * #define CLIB_MENUS // if you want to use the menu methods
+ * #inlcude "clib.h"
+ *
+ * -[TOC]-
+ * 1. SYSTEM
+ * 2. MEMORY
+ * 3. MENUS
+ * 4. UTILS
+ * 5. ANSI
+ * 6. FILES
+ * 7. LOGGING
+ * */
 
 #ifndef CLIB_H
 #define CLIB_H
@@ -38,11 +50,6 @@
 #include <assert.h>
 #include <sys/types.h>
 
-#ifndef _WIN32
-#define PATH_SEP "/"
-#else 
-#define PATH_SEP "\\"
-#endif // _WIN32
 
 // START [TYPES] START //
 typedef const char * Cstr;
@@ -54,13 +61,18 @@ typedef struct {
 // END [TYPES] END//
 
 // START [DECLARATIONS] START //
-
 CstrArray clib_cstr_array_make(Cstr first, ...);
 Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 
+#ifndef _WIN32
+    #define PATH_SEP "/"
+#else 
+    #define PATH_SEP "\\"
+#endif // _WIN32
+
 #define true 1
 #define false 0
-#define BOOL(x) x ? "true" : "false"
+#define BOOL(x) (x ? "true" : "false")
 
 // ANSI
 #define RESET "\e[0;39m"
@@ -69,11 +81,11 @@ Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ITALIC "\e[3m"
 #define CLEAR "\e[2J"
 #define ERASE_LINE "\e[2K"
-#define HIDE_CURSOR "\e[?25l"
-#define SHOW_CURSOR "\e[?25h"
+#define HIDE_CURSOR printf("\e[?25l");
+#define SHOW_CURSOR printf("\e[?25h");
 
 Cstr clib_color(int color, int bg);
-void clib_clearScreen();
+void clib_clear_screen();
 void clib_print_color_table();
 
 #define COLOR_BG(c) clib_color(c, 1)
@@ -121,7 +133,7 @@ int clib_file_exists(const char *filename);
 #else
     #define UNLIKELY(x) (x)
 #endif
-
+int clib_eu_mod(int a, int b);
 char* clib_shift_args(int *argc, char ***argv);
 #define ITOA(s, i) sprintf(s, "%d", i);
 #define JOIN(sep, ...) clib_cstr_array_join(sep, clib_cstr_array_make(__VA_ARGS__, NULL))
@@ -159,10 +171,352 @@ char* clib_shift_args(int *argc, char ***argv);
         LOG(stdout, "DEMO", #expr);   \
         expr;                         \
     } while(0)
+
+// MENUS
+#ifdef CLIB_MENUS
+#ifdef _WIN32
+    #include <conio.h>
+#else
+    #include <termios.h>
+    #include <unistd.h>
+
+    int _getch();
+#endif
+
+// TODO: Add more keys
+typedef enum {
+    CLIB_KEY_UNKNOWN = -1,
+    CLIB_KEY_ENTER = 10,
+    CLIB_KEY_BACKSPACE = 127,
+    CLIB_KEY_TAB = 9,
+    CLIB_KEY_ESC = 27,
+    CLIB_KEY_SPACE = 32,
+    CLIB_KEY_0 = '0',
+    CLIB_KEY_1 = '1',
+    CLIB_KEY_2 = '2',
+    CLIB_KEY_3 = '3',
+    CLIB_KEY_4 = '4',
+    CLIB_KEY_5 = '5',
+    CLIB_KEY_6 = '6',
+    CLIB_KEY_7 = '7',
+    CLIB_KEY_8 = '8',
+    CLIB_KEY_9 = '9',
+    CLIB_KEY_A = 'A',
+    CLIB_KEY_B = 'B',
+    CLIB_KEY_C = 'C',
+    CLIB_KEY_D = 'D',
+    CLIB_KEY_E = 'E',
+    CLIB_KEY_F = 'F',
+    CLIB_KEY_G = 'G',
+    CLIB_KEY_H = 'H',
+    CLIB_KEY_I = 'I',
+    CLIB_KEY_J = 'J',
+    CLIB_KEY_K = 'K',
+    CLIB_KEY_L = 'L',
+    CLIB_KEY_M = 'M',
+    CLIB_KEY_N = 'N',
+    CLIB_KEY_O = 'O',
+    CLIB_KEY_P = 'P',
+    CLIB_KEY_Q = 'Q',
+    CLIB_KEY_R = 'R',
+    CLIB_KEY_S = 'S',
+    CLIB_KEY_T = 'T',
+    CLIB_KEY_U = 'U',
+    CLIB_KEY_V = 'V',
+    CLIB_KEY_W = 'W',
+    CLIB_KEY_X = 'X',
+    CLIB_KEY_Y = 'Y',
+    CLIB_KEY_Z = 'Z',
+    CLIB_KEY_a = 'a',
+    CLIB_KEY_b = 'b',
+    CLIB_KEY_c = 'c',
+    CLIB_KEY_d = 'd',
+    CLIB_KEY_e = 'e',
+    CLIB_KEY_f = 'f',
+    CLIB_KEY_g = 'g',
+    CLIB_KEY_h = 'h',
+    CLIB_KEY_i = 'i',
+    CLIB_KEY_j = 'j',
+    CLIB_KEY_k = 'k',
+    CLIB_KEY_l = 'l',
+    CLIB_KEY_m = 'm',
+    CLIB_KEY_n = 'n',
+    CLIB_KEY_o = 'o',
+    CLIB_KEY_p = 'p',
+    CLIB_KEY_q = 'q',
+    CLIB_KEY_r = 'r',
+    CLIB_KEY_s = 's',
+    CLIB_KEY_t = 't',
+    CLIB_KEY_u = 'u',
+    CLIB_KEY_v = 'v',
+    CLIB_KEY_w = 'w',
+    CLIB_KEY_x = 'x',
+    CLIB_KEY_y = 'y',
+    CLIB_KEY_z = 'z',
+    // Defined later
+    CLIB_KEY_ARROW_UP,
+    CLIB_KEY_ARROW_DOWN,
+    CLIB_KEY_ARROW_LEFT,
+    CLIB_KEY_ARROW_RIGHT
+} ClibKey;
+
+typedef void (*ClibPrintOptionFunc)(Cstr option, int is_selected, int color);
+void clib_default_print_option(Cstr option, int is_selected, int color);
+void clib_arrow_print_option(Cstr option, int is_selected, int color);
+void clib_enable_input_buffering();
+void clib_disable_input_buffering();
+int clib_getch();
+int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...);
+#endif // CLIB_MENUS
+
 // END [DECLARATIONS] END//
 
 // START [IMPLEMENTATIONS] START //
 #ifdef CLIB_IMPLEMENTATION
+#ifdef CLIB_MENUS
+#ifndef _WIN32
+    int _getch() {
+        struct termios oldt, newt;
+        int ch;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        ch = getchar();
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        return ch;
+    }
+#endif
+
+void clib_enable_input_buffering(){
+    #ifdef _WIN32
+        // Enable console input buffering
+        HANDLE hConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
+
+        DWORD consoleMode;
+        GetConsoleMode(hConsoleInput, &consoleMode);
+
+        consoleMode |= ENABLE_LINE_INPUT;
+
+        SetConsoleMode(hConsoleInput, consoleMode);
+    #else
+        struct termios term;
+        tcgetattr(STDIN_FILENO, &term);
+        term.c_lflag |= (ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &term);
+
+    #endif
+    SHOW_CURSOR;
+}
+
+void clib_disable_input_buffering(){
+    #ifdef _WIN32
+        // Disable console input buffering
+        DWORD mode;
+        HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+        GetConsoleMode(hInput, &mode);
+        SetConsoleMode(hInput, mode & ~ENABLE_ECHO_INPUT & ~ENABLE_LINE_INPUT);
+    #else
+        struct termios term;
+        tcgetattr(STDIN_FILENO, &term);
+        term.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &term);
+
+    #endif
+    HIDE_CURSOR;
+}
+
+int clib_getch() {
+    int ch;
+    #ifdef _WIN32
+        ch = _getch();
+        if (ch == 0 || ch == 224) {
+            // Handle extended keys (arrows, function keys)
+            ch = _getch();
+            switch (ch) {
+                case 72: return CLIB_KEY_ARROW_UP;
+                case 80: return CLIB_KEY_ARROW_DOWN;
+                case 75: return CLIB_KEY_ARROW_LEFT;
+                case 77: return CLIB_KEY_ARROW_RIGHT;
+                default: return CLIB_KEY_UNKNOWN;
+            }
+        }
+    #else
+        ch = _getch();
+        if (ch == 27) {
+            if (getchar() == '[') {
+                switch (getchar()) {
+                    case 'A': return CLIB_KEY_ARROW_UP;
+                    case 'B': return CLIB_KEY_ARROW_DOWN;
+                    case 'C': return CLIB_KEY_ARROW_RIGHT;
+                    case 'D': return CLIB_KEY_ARROW_LEFT;
+                    default: return CLIB_KEY_UNKNOWN;
+                }
+            }
+            return CLIB_KEY_ESC;
+        }
+    #endif
+
+    switch (ch) {
+        case 10: return CLIB_KEY_ENTER;
+        case 127: return CLIB_KEY_BACKSPACE;
+        case 9: return CLIB_KEY_TAB;
+        case 27: return CLIB_KEY_ESC;
+        case 32: return CLIB_KEY_SPACE;
+        case '0': return CLIB_KEY_0;
+        case '1': return CLIB_KEY_1;
+        case '2': return CLIB_KEY_2;
+        case '3': return CLIB_KEY_3;
+        case '4': return CLIB_KEY_4;
+        case '5': return CLIB_KEY_5;
+        case '6': return CLIB_KEY_6;
+        case '7': return CLIB_KEY_7;
+        case '8': return CLIB_KEY_8;
+        case '9': return CLIB_KEY_9;
+        case 'A': return CLIB_KEY_A;
+        case 'B': return CLIB_KEY_B;
+        case 'C': return CLIB_KEY_C;
+        case 'D': return CLIB_KEY_D;
+        case 'E': return CLIB_KEY_E;
+        case 'F': return CLIB_KEY_F;
+        case 'G': return CLIB_KEY_G;
+        case 'H': return CLIB_KEY_H;
+        case 'I': return CLIB_KEY_I;
+        case 'J': return CLIB_KEY_J;
+        case 'K': return CLIB_KEY_K;
+        case 'L': return CLIB_KEY_L;
+        case 'M': return CLIB_KEY_M;
+        case 'N': return CLIB_KEY_N;
+        case 'O': return CLIB_KEY_O;
+        case 'P': return CLIB_KEY_P;
+        case 'Q': return CLIB_KEY_Q;
+        case 'R': return CLIB_KEY_R;
+        case 'S': return CLIB_KEY_S;
+        case 'T': return CLIB_KEY_T;
+        case 'U': return CLIB_KEY_U;
+        case 'V': return CLIB_KEY_V;
+        case 'W': return CLIB_KEY_W;
+        case 'X': return CLIB_KEY_X;
+        case 'Y': return CLIB_KEY_Y;
+        case 'Z': return CLIB_KEY_Z;
+        case 'a': return CLIB_KEY_a;
+        case 'b': return CLIB_KEY_b;
+        case 'c': return CLIB_KEY_c;
+        case 'd': return CLIB_KEY_d;
+        case 'e': return CLIB_KEY_e;
+        case 'f': return CLIB_KEY_f;
+        case 'g': return CLIB_KEY_g;
+        case 'h': return CLIB_KEY_h;
+        case 'i': return CLIB_KEY_i;
+        case 'j': return CLIB_KEY_j;
+        case 'k': return CLIB_KEY_k;
+        case 'l': return CLIB_KEY_l;
+        case 'm': return CLIB_KEY_m;
+        case 'n': return CLIB_KEY_n;
+        case 'o': return CLIB_KEY_o;
+        case 'p': return CLIB_KEY_p;
+        case 'q': return CLIB_KEY_q;
+        case 'r': return CLIB_KEY_r;
+        case 's': return CLIB_KEY_s;
+        case 't': return CLIB_KEY_t;
+        case 'u': return CLIB_KEY_u;
+        case 'v': return CLIB_KEY_v;
+        case 'w': return CLIB_KEY_w;
+        case 'x': return CLIB_KEY_x;
+        case 'y': return CLIB_KEY_y;
+        case 'z': return CLIB_KEY_z;
+        // Add other mappings as needed
+        default: return CLIB_KEY_UNKNOWN;
+    }
+}
+
+
+void clib_default_print_option(Cstr option, int is_selected, int color){
+    is_selected ? printf("%s%s%s", COLOR_BG(color), option, RESET) : printf("%s", option);
+}
+
+void clib_arrow_print_option(Cstr option, int is_selected, int color){
+    is_selected ? printf("%s>%s %s", COLOR_FG(color), RESET, option) : printf("  %s", option);
+}
+
+int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
+    clib_clear_screen();
+    clib_disable_input_buffering();
+
+    int selected = 0;
+    size_t size = 0;
+    CstrArray options = {0};
+
+    if (first_option == NULL) {
+        return -1;
+    }
+
+    options.count += 1;
+
+    va_list args;
+    va_start(args, first_option);
+    for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
+        options.count += 1;
+    }
+    va_end(args);
+
+    options.items = (Cstr*) malloc(sizeof(options.items[0]) * options.count);
+    if (options.items == NULL) {
+        PANIC("could not allocate memory: %s", strerror(errno));
+    }
+    options.count = 0;
+
+    options.items[options.count++] = first_option;
+
+    va_start(args, first_option);
+    for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
+        options.items[options.count++] = next;
+    }
+    va_end(args);
+
+    while(true){
+        if(title != NULL){
+            printf("%s%s%s\n", COLOR_FG(color), title, RESET);
+        }
+        for(size_t i = 0; i < options.count; ++i){
+            print_option(options.items[i], selected == i, color);
+            printf("\n");
+        }
+        
+        int pressed = clib_getch();
+        switch (pressed) {
+            case CLIB_KEY_ARROW_UP:
+                selected = clib_eu_mod((selected-1), options.count);
+                break;
+            case CLIB_KEY_ARROW_DOWN:
+                selected = clib_eu_mod((selected+1), options.count);
+                break;
+            case CLIB_KEY_ENTER:
+                clib_enable_input_buffering();
+                return selected; 
+            default:
+                break;
+        }
+
+        clib_clear_screen();
+    }
+}
+#endif // CLIB_MENUS
+
+int clib_eu_mod(int a, int b){
+    if (b == 0) {
+        // Handle division by zero case
+        fprintf(stderr, "Error: Division by zero is undefined.\n");
+        return 0;
+    }
+    
+    int r = a % b;
+    if (r < 0) {
+        r += (b > 0) ? b : -b;
+    }
+    return r;
+}
+
 CstrArray clib_cstr_array_make(Cstr first, ...) {
     CstrArray result = {0};
 
@@ -247,7 +601,7 @@ Cstr clib_color(int color, int bg) {
     return CONCAT("\e[", where_code, "8;5;", color_string, "m");
 }
 
-void clib_clearScreen() {
+void clib_clear_screen() {
 #ifdef _WIN32
     system("cls"); // Clear screen for Windows
 #else
