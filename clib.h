@@ -32,7 +32,7 @@
  * -[TOC]-
  * 1. SYSTEM
  * 2. MEMORY
- * 3. MENUS
+ * 3. MENUS // needs its own define!
  * 4. UTILS
  * 5. ANSI
  * 6. FILES
@@ -437,6 +437,10 @@ void clib_default_print_option(Cstr option, int is_selected, int color){
 
 void clib_arrow_print_option(Cstr option, int is_selected, int color){
     is_selected ? printf("%s>%s %s", COLOR_FG(color), RESET, option) : printf("  %s", option);
+}
+
+void clib_brackets_print_option(Cstr option, int is_selected, int color){
+    is_selected ? printf("%s[%s%s%s]%s", COLOR_FG(color), RESET, option, COLOR_FG(color), RESET) : printf(" %s ", option);
 }
 
 int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
