@@ -36,6 +36,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/types.h>
 
 #ifndef _WIN32
 #define PATH_SEP "/"
@@ -54,8 +55,8 @@ typedef struct {
 
 // START [DECLARATIONS] START //
 
-CstrArray cstr_array_make(Cstr first, ...);
-Cstr cstr_array_join(Cstr sep, CstrArray cstrs);
+CstrArray clib_cstr_array_make(Cstr first, ...);
+Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 
 #define true 1
 #define false 0
@@ -71,35 +72,35 @@ Cstr cstr_array_join(Cstr sep, CstrArray cstrs);
 #define HIDE_CURSOR "\e[?25l"
 #define SHOW_CURSOR "\e[?25h"
 
-Cstr color(int color, int bg);
-void clearScreen();
-void print_color_table();
+Cstr clib_color(int color, int bg);
+void clib_clearScreen();
+void clib_print_color_table();
 
-#define COLOR_BG(c) color(c, 1)
-#define COLOR_FG(c) color(c, 0)
+#define COLOR_BG(c) clib_color(c, 1)
+#define COLOR_FG(c) clib_color(c, 0)
 
 // SYSTEM
-char* execute_command(const char* command);
-char* get_env(const char* varname);
-int set_env(const char* varname, const char* value, int overwrite);
-int unset_env(const char* varname);
+char* clib_execute_command(const char* command);
+char* clib_get_env(const char* varname);
+int clib_set_env(const char* varname, const char* value, int overwrite);
+int clib_unset_env(const char* varname);
 
 // MEMORY
-void* safe_malloc(size_t size);
-void* safe_calloc(size_t nmemb, size_t size);
-void* safe_realloc(void *ptr, size_t size);
-void safe_free(void **ptr);
+void* clib_safe_malloc(size_t size);
+void* clib_safe_calloc(size_t nmemb, size_t size);
+void* clib_safe_realloc(void *ptr, size_t size);
+void clib_safe_free(void **ptr);
 
 // FILES
-void create_file(const char *filename);
-void write_file(const char *filename, const char *data);
-char* read_file(const char *filename);
-void delete_file(const char *filename);
-void append_file(const char *filename, const char *data);
-void copy_file(const char *source, const char *destination);
-void move_file(const char *source, const char *destination);
-long file_size(const char *filename);
-int file_exists(const char *filename);
+void clib_create_file(const char *filename);
+void clib_write_file(const char *filename, const char *data);
+char* clib_read_file(const char *filename);
+void clib_delete_file(const char *filename);
+void clib_append_file(const char *filename, const char *data);
+void clib_copy_file(const char *source, const char *destination);
+void clib_move_file(const char *source, const char *destination);
+long clib_file_size(const char *filename);
+int clib_file_exists(const char *filename);
 
 // UTILS
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -121,9 +122,9 @@ int file_exists(const char *filename);
     #define UNLIKELY(x) (x)
 #endif
 
-char* shift_args(int *argc, char ***argv);
+char* clib_shift_args(int *argc, char ***argv);
 #define ITOA(s, i) sprintf(s, "%d", i);
-#define JOIN(sep, ...) cstr_array_join(sep, cstr_array_make(__VA_ARGS__, NULL))
+#define JOIN(sep, ...) clib_cstr_array_join(sep, clib_cstr_array_make(__VA_ARGS__, NULL))
 #define CONCAT(...) JOIN("", __VA_ARGS__)
 #define PATH(...) JOIN(PATH_SEP, __VA_ARGS__)
 
@@ -162,7 +163,7 @@ char* shift_args(int *argc, char ***argv);
 
 // START [IMPLEMENTATIONS] START //
 #ifdef CLIB_IMPLEMENTATION
-CstrArray cstr_array_make(Cstr first, ...) {
+CstrArray clib_cstr_array_make(Cstr first, ...) {
     CstrArray result = {0};
 
     if (first == NULL) {
@@ -195,7 +196,7 @@ CstrArray cstr_array_make(Cstr first, ...) {
     return result;
 }
 
-Cstr cstr_array_join(Cstr sep, CstrArray cstrs) {
+Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs) {
     if (cstrs.count == 0) {
         return "";
     }
@@ -228,7 +229,7 @@ Cstr cstr_array_join(Cstr sep, CstrArray cstrs) {
     return result;
 }
 
-char* shift_args(int *argc, char ***argv) {
+char* clib_shift_args(int *argc, char ***argv) {
     assert(*argc > 0);
     char *result = **argv;
     *argc -= 1;
@@ -236,7 +237,7 @@ char* shift_args(int *argc, char ***argv) {
     return result;
 }
 
-Cstr color(int color, int bg) {
+Cstr clib_color(int color, int bg) {
     if (color < 0 || color > 255) return "";
 
     char where_code[12], color_string[12];
@@ -246,7 +247,7 @@ Cstr color(int color, int bg) {
     return CONCAT("\e[", where_code, "8;5;", color_string, "m");
 }
 
-void clearScreen() {
+void clib_clearScreen() {
 #ifdef _WIN32
     system("cls"); // Clear screen for Windows
 #else
@@ -255,17 +256,17 @@ void clearScreen() {
 }
 
 
-void print_color_table(){
+void clib_print_color_table(){
     for(int i = 0; i < 256; i++){
         if(i % 21 == 0) printf("\n");
         
-        printf("%s%3d ", color(i, 0), i);
+        printf("%s%3d ", clib_color(i, 0), i);
     }
     printf("%s\n", RESET);
 }
 
 
-void copy_file(const char *source, const char *destination) {
+void clib_copy_file(const char *source, const char *destination) {
     FILE *srcFile = fopen(source, "r");
     if (srcFile == NULL) {
         perror("Error opening source file");
@@ -294,14 +295,14 @@ void copy_file(const char *source, const char *destination) {
     fclose(destFile);
 }
 
-void move_file(const char *source, const char *destination) {
+void clib_move_file(const char *source, const char *destination) {
     if (rename(source, destination) != 0) {
         perror("Error moving/renaming file");
         exit(EXIT_FAILURE);
     }
 }
 
-long file_size(const char *filename) {
+long clib_file_size(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
@@ -314,7 +315,7 @@ long file_size(const char *filename) {
     return size;
 }
 
-int file_exists(const char *filename) {
+int clib_file_exists(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file != NULL) {
         fclose(file);
@@ -323,7 +324,7 @@ int file_exists(const char *filename) {
     return 0;
 }
 
-void append_file(const char *filename, const char *data) {
+void clib_append_file(const char *filename, const char *data) {
     FILE *file = fopen(filename, "a");
     if (file == NULL) {
         perror("Error opening file for appending");
@@ -337,7 +338,7 @@ void append_file(const char *filename, const char *data) {
     fclose(file);
 }
 
-void create_file(const char *filename) {
+void clib_create_file(const char *filename) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Error creating file");
@@ -346,7 +347,7 @@ void create_file(const char *filename) {
     fclose(file);
 }
 
-void write_file(const char *filename, const char *data) {
+void clib_write_file(const char *filename, const char *data) {
     FILE *file = fopen(filename, "a");
     if (file == NULL) {
         perror("Error opening file for writing");
@@ -360,7 +361,7 @@ void write_file(const char *filename, const char *data) {
     fclose(file);
 }
 
-char* read_file(const char *filename) {
+char* clib_read_file(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file for reading");
@@ -392,14 +393,14 @@ char* read_file(const char *filename) {
     return buffer;
 }
 
-void delete_file(const char *filename) {
+void clib_delete_file(const char *filename) {
     if (remove(filename) != 0) {
         perror("Error deleting file");
         exit(EXIT_FAILURE);
     }
 }
 
-void* safe_malloc(size_t size) {
+void* clib_safe_malloc(size_t size) {
     void *ptr = malloc(size);
     if (ptr == NULL) {
         fprintf(stderr, "Memory allocation error\n");
@@ -408,7 +409,7 @@ void* safe_malloc(size_t size) {
     return ptr;
 }
 
-void* safe_calloc(size_t nmemb, size_t size) {
+void* clib_safe_calloc(size_t nmemb, size_t size) {
     void *ptr = calloc(nmemb, size);
     if (ptr == NULL) {
         fprintf(stderr, "Memory allocation error\n");
@@ -417,7 +418,7 @@ void* safe_calloc(size_t nmemb, size_t size) {
     return ptr;
 }
 
-void* safe_realloc(void *ptr, size_t size) {
+void* clib_safe_realloc(void *ptr, size_t size) {
     void *new_ptr = realloc(ptr, size);
     if (new_ptr == NULL) {
         fprintf(stderr, "Memory reallocation error\n");
@@ -426,14 +427,14 @@ void* safe_realloc(void *ptr, size_t size) {
     return new_ptr;
 }
 
-void safe_free(void **ptr) {
+void clib_safe_free(void **ptr) {
     if (ptr != NULL && *ptr != NULL) {
         free(*ptr);
         *ptr = NULL;
     }
 }
 
-char* execute_command(const char* command) {
+char* clib_execute_command(const char* command) {
     char buffer[128];
     char *result = NULL;
     size_t result_size = 0;
@@ -457,15 +458,15 @@ char* execute_command(const char* command) {
     return result;
 }
 
-char* get_env(const char* varname) {
+char* clib_get_env(const char* varname) {
     return getenv(varname);
 }
 
-int set_env(const char* varname, const char* value, int overwrite) {
+int set_envclib_(const char* varname, const char* value, int overwrite) {
     return setenv(varname, value, overwrite);
 }
 
-int unset_env(const char* varname) {
+int clib_unset_env(const char* varname) {
     return unsetenv(varname);
 }
 
