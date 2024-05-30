@@ -81,8 +81,10 @@ Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ITALIC "\e[3m"
 #define CLEAR "\e[2J"
 #define ERASE_LINE "\e[2K"
-#define HIDE_CURSOR printf("\e[?25l");
-#define SHOW_CURSOR printf("\e[?25h");
+#define HIDE_CURSOR printf("\e[?25l")
+#define SHOW_CURSOR printf("\e[?25h")
+#define MOVE_CURSOR_UP(lines) printf("\033[%zuA", lines)
+#define CLEAR_BELOW_CURSOR printf("\033[J")
 
 Cstr clib_color(int color, int bg);
 void clib_clear_screen();
@@ -444,7 +446,6 @@ void clib_brackets_print_option(Cstr option, int is_selected, int color){
 }
 
 int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
-    clib_clear_screen();
     clib_disable_input_buffering();
 
     int selected = 0;
@@ -455,10 +456,10 @@ int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr firs
         return -1;
     }
 
-    options.count += 1;
-
     va_list args;
     va_start(args, first_option);
+    options.count += 1;
+
     for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
         options.count += 1;
     }
@@ -470,12 +471,14 @@ int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr firs
     }
     options.count = 0;
 
-    options.items[options.count++] = first_option;
+    options.items[options.count] = first_option;
+    options.count += 1;
 
     va_start(args, first_option);
     for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
         options.items[options.count++] = next;
     }
+
     va_end(args);
 
     while(true){
@@ -497,12 +500,14 @@ int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr firs
                 break;
             case CLIB_KEY_ENTER:
                 clib_enable_input_buffering();
+                free(options.items);
                 return selected; 
             default:
                 break;
         }
 
-        clib_clear_screen();
+        MOVE_CURSOR_UP(options.count + (title != NULL));
+        CLEAR_BELOW_CURSOR;
     }
 }
 #endif // CLIB_MENUS
