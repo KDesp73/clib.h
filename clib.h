@@ -42,6 +42,11 @@
 #ifndef CLIB_H
 #define CLIB_H
 
+#define CLIB_VERSION_MAJOR 0
+#define CLIB_VERSION_MINOR 1
+#define CLIB_VERSION_PATCH 0
+#define CLIB_VERSION  "0.1.0"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -49,7 +54,6 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
-
 
 // START [TYPES] START //
 typedef const char * Cstr;
@@ -61,8 +65,8 @@ typedef struct {
 // END [TYPES] END//
 
 // START [DECLARATIONS] START //
-CstrArray clib_cstr_array_make(Cstr first, ...);
-Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
+static CstrArray clib_cstr_array_make(Cstr first, ...);
+static Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 
 #ifndef _WIN32
     #define PATH_SEP "/"
@@ -81,10 +85,10 @@ Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ITALIC "\e[3m"
 #define CLEAR "\e[2J"
 #define ERASE_LINE "\e[2K"
-#define HIDE_CURSOR printf("\e[?25l")
-#define SHOW_CURSOR printf("\e[?25h")
+#define HIDE_CURSOR() printf("\e[?25l")
+#define SHOW_CURSOR() printf("\e[?25h")
 #define GOTOXY(x,y) printf("\033[%d;%dH", (y), (x))
-#define MOVE_CURSOR_UP(x) printf("\033[%zuA", lines)
+#define MOVE_CURSOR_UP(x) printf("\033[%zuA", x)
 #define MOVE_CURSOR_DOWN(x) printf("\033[%dB", x);
 #define MOVE_CURSOR_RIGHT(x) printf("\033[%dC", x);
 #define MOVE_CURSOR_LEFT(x) printf("\033[%dD", x);
@@ -100,35 +104,35 @@ Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ANSI_LGREY "\e[0;37m"
 #define ANSI_DGREY "\e[0;38m"
 
-Cstr clib_color(int color, int bg);
-void clib_clear_screen();
-void clib_print_color_table();
+static Cstr clib_color(int color, int bg);
+static void clib_clear_screen();
+static void clib_print_color_table();
 
 #define COLOR_BG(c) clib_color(c, 1)
 #define COLOR_FG(c) clib_color(c, 0)
 
 // SYSTEM
-char* clib_execute_command(const char* command);
-char* clib_get_env(const char* varname);
-int clib_set_env(const char* varname, const char* value, int overwrite);
-int clib_unset_env(const char* varname);
+static char* clib_execute_command(const char* command);
+static char* clib_get_env(const char* varname);
+static int clib_set_env(const char* varname, const char* value, int overwrite);
+static int clib_unset_env(const char* varname);
 
 // MEMORY
-void* clib_safe_malloc(size_t size);
-void* clib_safe_calloc(size_t nmemb, size_t size);
-void* clib_safe_realloc(void *ptr, size_t size);
-void clib_safe_free(void **ptr);
+static void* clib_safe_malloc(size_t size);
+static void* clib_safe_calloc(size_t nmemb, size_t size);
+static void* clib_safe_realloc(void *ptr, size_t size);
+static void clib_safe_free(void **ptr);
 
 // FILES
-void clib_create_file(const char *filename);
-void clib_write_file(const char *filename, const char *data);
-char* clib_read_file(const char *filename);
-void clib_delete_file(const char *filename);
-void clib_append_file(const char *filename, const char *data);
-void clib_copy_file(const char *source, const char *destination);
-void clib_move_file(const char *source, const char *destination);
-long clib_file_size(const char *filename);
-int clib_file_exists(const char *filename);
+static void clib_create_file(const char *filename);
+static void clib_write_file(const char *filename, const char *data);
+static char* clib_read_file(const char *filename);
+static void clib_delete_file(const char *filename);
+static void clib_append_file(const char *filename, const char *data);
+static void clib_copy_file(const char *source, const char *destination);
+static void clib_move_file(const char *source, const char *destination);
+static long clib_file_size(const char *filename);
+static int clib_file_exists(const char *filename);
 
 // UTILS
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -149,8 +153,9 @@ int clib_file_exists(const char *filename);
 #else
     #define UNLIKELY(x) (x)
 #endif
-int clib_eu_mod(int a, int b);
-char* clib_shift_args(int *argc, char ***argv);
+
+static int clib_eu_mod(int a, int b);
+static char* clib_shift_args(int *argc, char ***argv);
 #define ITOA(s, i) sprintf(s, "%d", i);
 #define JOIN(sep, ...) clib_cstr_array_join(sep, clib_cstr_array_make(__VA_ARGS__, NULL))
 #define CONCAT(...) JOIN("", __VA_ARGS__)
@@ -280,13 +285,13 @@ typedef enum {
 } ClibKey;
 
 typedef void (*ClibPrintOptionFunc)(Cstr option, int is_selected, int color);
-void clib_default_print_option(Cstr option, int is_selected, int color);
-void clib_arrow_print_option(Cstr option, int is_selected, int color);
-void clib_brackets_print_option(Cstr option, int is_selected, int color);
-void clib_enable_input_buffering();
-void clib_disable_input_buffering();
-int clib_getch();
-int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...);
+static void clib_default_print_option(Cstr option, int is_selected, int color);
+static void clib_arrow_print_option(Cstr option, int is_selected, int color);
+static void clib_brackets_print_option(Cstr option, int is_selected, int color);
+static void clib_enable_input_buffering();
+static void clib_disable_input_buffering();
+static int clib_getch();
+static int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...);
 #endif // CLIB_MENUS
 
 // END [DECLARATIONS] END//
@@ -308,7 +313,7 @@ int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr firs
     }
 #endif
 
-void clib_enable_input_buffering(){
+static void clib_enable_input_buffering(){
     #ifdef _WIN32
         // Enable console input buffering
         HANDLE hConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -326,10 +331,10 @@ void clib_enable_input_buffering(){
         tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
     #endif
-    SHOW_CURSOR;
+    SHOW_CURSOR();
 }
 
-void clib_disable_input_buffering(){
+static void clib_disable_input_buffering(){
     #ifdef _WIN32
         // Disable console input buffering
         DWORD mode;
@@ -343,10 +348,10 @@ void clib_disable_input_buffering(){
         tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
     #endif
-    HIDE_CURSOR;
+    HIDE_CURSOR();
 }
 
-int clib_getch() {
+static int clib_getch() {
     int ch;
     #ifdef _WIN32
         ch = _getch();
@@ -451,19 +456,19 @@ int clib_getch() {
 }
 
 
-void clib_default_print_option(Cstr option, int is_selected, int color){
+static void clib_default_print_option(Cstr option, int is_selected, int color){
     is_selected ? printf("%s%s%s", COLOR_BG(color), option, RESET) : printf("%s", option);
 }
 
-void clib_arrow_print_option(Cstr option, int is_selected, int color){
+static void clib_arrow_print_option(Cstr option, int is_selected, int color){
     is_selected ? printf("%s>%s %s", COLOR_FG(color), RESET, option) : printf("  %s", option);
 }
 
-void clib_brackets_print_option(Cstr option, int is_selected, int color){
+static void clib_brackets_print_option(Cstr option, int is_selected, int color){
     is_selected ? printf("%s[%s%s%s]%s", COLOR_FG(color), RESET, option, COLOR_FG(color), RESET) : printf(" %s ", option);
 }
 
-int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
+static int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
     clib_disable_input_buffering();
 
     int selected = 0;
@@ -530,7 +535,7 @@ int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr firs
 }
 #endif // CLIB_MENUS
 
-int clib_eu_mod(int a, int b){
+static int clib_eu_mod(int a, int b){
     if (b == 0) {
         // Handle division by zero case
         fprintf(stderr, "Error: Division by zero is undefined.\n");
@@ -544,7 +549,7 @@ int clib_eu_mod(int a, int b){
     return r;
 }
 
-CstrArray clib_cstr_array_make(Cstr first, ...) {
+static CstrArray clib_cstr_array_make(Cstr first, ...) {
     CstrArray result = {0};
 
     if (first == NULL) {
@@ -577,7 +582,7 @@ CstrArray clib_cstr_array_make(Cstr first, ...) {
     return result;
 }
 
-Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs) {
+static Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs) {
     if (cstrs.count == 0) {
         return "";
     }
@@ -610,7 +615,7 @@ Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs) {
     return result;
 }
 
-char* clib_shift_args(int *argc, char ***argv) {
+static char* clib_shift_args(int *argc, char ***argv) {
     assert(*argc > 0);
     char *result = **argv;
     *argc -= 1;
@@ -618,7 +623,7 @@ char* clib_shift_args(int *argc, char ***argv) {
     return result;
 }
 
-Cstr clib_color(int color, int bg) {
+static Cstr clib_color(int color, int bg) {
     if (color < 0 || color > 255) return "";
 
     char where_code[12], color_string[12];
@@ -628,7 +633,7 @@ Cstr clib_color(int color, int bg) {
     return CONCAT("\e[", where_code, "8;5;", color_string, "m");
 }
 
-void clib_clear_screen() {
+static void clib_clear_screen() {
 #ifdef _WIN32
     system("cls"); // Clear screen for Windows
 #else
@@ -637,7 +642,7 @@ void clib_clear_screen() {
 }
 
 
-void clib_print_color_table(){
+static void clib_print_color_table(){
     for(int i = 0; i < 256; i++){
         if(i % 21 == 0) printf("\n");
         
@@ -647,7 +652,7 @@ void clib_print_color_table(){
 }
 
 
-void clib_copy_file(const char *source, const char *destination) {
+static void clib_copy_file(const char *source, const char *destination) {
     FILE *srcFile = fopen(source, "r");
     if (srcFile == NULL) {
         perror("Error opening source file");
@@ -676,14 +681,14 @@ void clib_copy_file(const char *source, const char *destination) {
     fclose(destFile);
 }
 
-void clib_move_file(const char *source, const char *destination) {
+static void clib_move_file(const char *source, const char *destination) {
     if (rename(source, destination) != 0) {
         perror("Error moving/renaming file");
         exit(EXIT_FAILURE);
     }
 }
 
-long clib_file_size(const char *filename) {
+static long clib_file_size(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
@@ -696,7 +701,7 @@ long clib_file_size(const char *filename) {
     return size;
 }
 
-int clib_file_exists(const char *filename) {
+static int clib_file_exists(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file != NULL) {
         fclose(file);
@@ -705,7 +710,7 @@ int clib_file_exists(const char *filename) {
     return 0;
 }
 
-void clib_append_file(const char *filename, const char *data) {
+static void clib_append_file(const char *filename, const char *data) {
     FILE *file = fopen(filename, "a");
     if (file == NULL) {
         perror("Error opening file for appending");
@@ -719,7 +724,7 @@ void clib_append_file(const char *filename, const char *data) {
     fclose(file);
 }
 
-void clib_create_file(const char *filename) {
+static void clib_create_file(const char *filename) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Error creating file");
@@ -728,7 +733,7 @@ void clib_create_file(const char *filename) {
     fclose(file);
 }
 
-void clib_write_file(const char *filename, const char *data) {
+static void clib_write_file(const char *filename, const char *data) {
     FILE *file = fopen(filename, "a");
     if (file == NULL) {
         perror("Error opening file for writing");
@@ -742,7 +747,7 @@ void clib_write_file(const char *filename, const char *data) {
     fclose(file);
 }
 
-char* clib_read_file(const char *filename) {
+static char* clib_read_file(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file for reading");
@@ -774,14 +779,14 @@ char* clib_read_file(const char *filename) {
     return buffer;
 }
 
-void clib_delete_file(const char *filename) {
+static void clib_delete_file(const char *filename) {
     if (remove(filename) != 0) {
         perror("Error deleting file");
         exit(EXIT_FAILURE);
     }
 }
 
-void* clib_safe_malloc(size_t size) {
+static void* clib_safe_malloc(size_t size) {
     void *ptr = malloc(size);
     if (ptr == NULL) {
         fprintf(stderr, "Memory allocation error\n");
@@ -790,7 +795,7 @@ void* clib_safe_malloc(size_t size) {
     return ptr;
 }
 
-void* clib_safe_calloc(size_t nmemb, size_t size) {
+static void* clib_safe_calloc(size_t nmemb, size_t size) {
     void *ptr = calloc(nmemb, size);
     if (ptr == NULL) {
         fprintf(stderr, "Memory allocation error\n");
@@ -799,7 +804,7 @@ void* clib_safe_calloc(size_t nmemb, size_t size) {
     return ptr;
 }
 
-void* clib_safe_realloc(void *ptr, size_t size) {
+static void* clib_safe_realloc(void *ptr, size_t size) {
     void *new_ptr = realloc(ptr, size);
     if (new_ptr == NULL) {
         fprintf(stderr, "Memory reallocation error\n");
@@ -808,14 +813,14 @@ void* clib_safe_realloc(void *ptr, size_t size) {
     return new_ptr;
 }
 
-void clib_safe_free(void **ptr) {
+static void clib_safe_free(void **ptr) {
     if (ptr != NULL && *ptr != NULL) {
         free(*ptr);
         *ptr = NULL;
     }
 }
 
-char* clib_execute_command(const char* command) {
+static char* clib_execute_command(const char* command) {
     char buffer[128];
     char *result = NULL;
     size_t result_size = 0;
@@ -839,15 +844,15 @@ char* clib_execute_command(const char* command) {
     return result;
 }
 
-char* clib_get_env(const char* varname) {
+static char* clib_get_env(const char* varname) {
     return getenv(varname);
 }
 
-int set_envclib_(const char* varname, const char* value, int overwrite) {
+static int set_envclib_(const char* varname, const char* value, int overwrite) {
     return setenv(varname, value, overwrite);
 }
 
-int clib_unset_env(const char* varname) {
+static int clib_unset_env(const char* varname) {
     return unsetenv(varname);
 }
 
@@ -857,4 +862,5 @@ int clib_unset_env(const char* varname) {
 
 
 #endif // CLIB_H
+
 
