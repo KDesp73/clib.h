@@ -47,6 +47,8 @@
 #define CLIB_VERSION_PATCH 0
 #define CLIB_VERSION  "0.1.0"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
