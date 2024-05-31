@@ -265,6 +265,7 @@ typedef enum {
 typedef void (*ClibPrintOptionFunc)(Cstr option, int is_selected, int color);
 void clib_default_print_option(Cstr option, int is_selected, int color);
 void clib_arrow_print_option(Cstr option, int is_selected, int color);
+void clib_brackets_print_option(Cstr option, int is_selected, int color);
 void clib_enable_input_buffering();
 void clib_disable_input_buffering();
 int clib_getch();
