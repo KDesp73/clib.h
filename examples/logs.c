@@ -8,7 +8,9 @@ int main(int argc, char** argv){
     WARN("This is a warning");
     ERRO("An error");
     DEBU("a = 4");
-    PANIC("panic here");
+
+    int a= 3;
+    clib_log(CLIB_PANIC, "a = %d", a);
 
     return 0;
 }

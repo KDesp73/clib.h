@@ -171,6 +171,16 @@ static char* clib_shift_args(int *argc, char ***argv);
         exit(1); \
     } while (0) \
 
+typedef enum {
+    CLIB_INFO,
+    CLIB_WARN,
+    CLIB_ERRO,
+    CLIB_DEBU,
+    CLIB_PANIC,
+} ClibLog;
+
+void clib_log(int log_level, char* format, ...);
+
 #define LOG(stream, type, format, ...) \
     fprintf(stream, CONCAT("[%s] ", format, "\n"), type, ##__VA_ARGS__)
 
@@ -304,6 +314,37 @@ static int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cs
 
 // START [IMPLEMENTATIONS] START //
 #ifdef CLIB_IMPLEMENTATION
+
+void clib_log(int log_level, char* format, ...){
+    switch(log_level){
+    case CLIB_INFO:
+        fprintf(stderr, "[INFO] ");
+        break;
+    case CLIB_WARN:
+        fprintf(stderr, "[WARNING] ");
+        break;
+    case CLIB_ERRO:
+        fprintf(stderr, "[ERROR] ");
+        break;
+    case CLIB_DEBU:
+        fprintf(stderr, "[DEBU] ");
+        break;
+    case CLIB_PANIC:
+        fprintf(stderr, "[PANIC] ");
+        break;
+    default:
+        assert(0 && "unreachable");
+    }
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+
+    if(log_level == CLIB_PANIC) exit(1);
+}
+
 #ifdef CLIB_MENUS
 #ifndef _WIN32
     int _getch() {
