@@ -83,8 +83,22 @@ Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ERASE_LINE "\e[2K"
 #define HIDE_CURSOR printf("\e[?25l")
 #define SHOW_CURSOR printf("\e[?25h")
-#define MOVE_CURSOR_UP(lines) printf("\033[%zuA", lines)
+#define GOTOXY(x,y) printf("\033[%d;%dH", (y), (x))
+#define MOVE_CURSOR_UP(x) printf("\033[%zuA", lines)
+#define MOVE_CURSOR_DOWN(x) printf("\033[%dB", x);
+#define MOVE_CURSOR_RIGHT(x) printf("\033[%dC", x);
+#define MOVE_CURSOR_LEFT(x) printf("\033[%dD", x);
 #define CLEAR_BELOW_CURSOR printf("\033[J")
+
+#define ANSI_BLACK "\e[0;30m"
+#define ANSI_RED "\e[0;31m"
+#define ANSI_GREEN "\e[0;32m"
+#define ANSI_YELLOW "\e[0;33m"
+#define ANSI_BLUE "\e[0;34m"
+#define ANSI_PURPLE "\e[0;35m"
+#define ANSI_CYAN "\e[0;36m"
+#define ANSI_LGREY "\e[0;37m"
+#define ANSI_DGREY "\e[0;38m"
 
 Cstr clib_color(int color, int bg);
 void clib_clear_screen();
@@ -143,6 +157,9 @@ char* clib_shift_args(int *argc, char ***argv);
 #define PATH(...) JOIN(PATH_SEP, __VA_ARGS__)
 
 // LOGGING
+#define handle_error(msg) \
+    do { perror(CONCAT("[ERRO] ", msg)); exit(1); } while (0)
+
 #define LOG(stream, type, format, ...) \
     fprintf(stream, CONCAT("[%s] ", format, "\n"), type, ##__VA_ARGS__)
 
