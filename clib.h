@@ -162,8 +162,12 @@ static char* clib_shift_args(int *argc, char ***argv);
 #define PATH(...) JOIN(PATH_SEP, __VA_ARGS__)
 
 // LOGGING
-#define handle_error(msg) \
-    do { perror(CONCAT("[ERRO] ", msg)); exit(1); } while (0)
+#define HANDLE_ERROR(msg) \
+    do { \
+        perror(CONCAT("[ERRO] ", msg)); \
+        printf("\n"); \
+        exit(1); \
+    } while (0) \
 
 #define LOG(stream, type, format, ...) \
     fprintf(stream, CONCAT("[%s] ", format, "\n"), type, ##__VA_ARGS__)
