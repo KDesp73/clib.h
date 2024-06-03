@@ -1,2 +1,2 @@
-TODO: another option being added to the menu when printing above it
 TODO: documentation
+DONE: another option being added to the menu when printing above it

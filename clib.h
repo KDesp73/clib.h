@@ -239,7 +239,6 @@ CLIBAPI void clib_log(int log_level, char* format, ...);
     } while(0)
 
 // MENUS
-#ifdef CLIB_MENUS
 #ifdef _WIN32
     #include <conio.h>
 #else
@@ -334,7 +333,6 @@ CLIBAPI void clib_enable_input_buffering();
 CLIBAPI void clib_disable_input_buffering();
 CLIBAPI int clib_getch();
 CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...);
-#endif // CLIB_MENUS
 
 // END [DECLARATIONS] END//
 
@@ -693,10 +691,12 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
 
     va_list args;
     va_start(args, first_option);
-    options.count += 1;
-
-    for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
-        options.count += 1;
+    options.count++;
+    Cstr next = NULL;
+    for (next = va_arg(args, Cstr); next != NULL; ) {
+        next = va_arg(args, Cstr);
+        if(next)
+            options.count++;
     }
     va_end(args);
 
@@ -706,12 +706,14 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
     }
     options.count = 0;
 
-    options.items[options.count] = first_option;
-    options.count += 1;
+    options.items[options.count++] = first_option;
 
     va_start(args, first_option);
-    for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
-        options.items[options.count++] = next;
+    next = NULL;
+    for (next = va_arg(args, Cstr); next != NULL;) {
+        options.items[options.count] = next;
+        next = va_arg(args, Cstr);
+        if(next != NULL) options.count++;
     }
 
     va_end(args);
