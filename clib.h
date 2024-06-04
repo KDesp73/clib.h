@@ -132,10 +132,12 @@ CLIBAPI void clib_print_color_table();
 #define COLOR_FG(c) clib_color(c, 0)
 
 // SYSTEM
+#ifndef _WIN32
 CLIBAPI char* clib_execute_command(const char* command);
 CLIBAPI char* clib_get_env(const char* varname);
 CLIBAPI int clib_set_env(const char* varname, const char* value, int overwrite);
 CLIBAPI int clib_unset_env(const char* varname);
+#endif
 
 // MEMORY
 CLIBAPI void* clib_safe_malloc(size_t size);
@@ -1034,6 +1036,7 @@ CLIBAPI void clib_safe_free(void **ptr) {
     }
 }
 
+#ifndef _WIN32
 CLIBAPI char* clib_execute_command(const char* command) {
     char buffer[128];
     char *result = NULL;
@@ -1069,6 +1072,7 @@ CLIBAPI int set_envclib_(const char* varname, const char* value, int overwrite) 
 CLIBAPI int clib_unset_env(const char* varname) {
     return unsetenv(varname);
 }
+#endif
 
 #endif // CLIB_IMPLEMENTATION
 // END [IMPLEMENTATIONS] END//
