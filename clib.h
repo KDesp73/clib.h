@@ -378,9 +378,6 @@ CLIBAPI void clib_add_arg(CliArg* arg, CliArguments* arguments){
 CLIBAPI CliArguments clib_make_cli_arguments(size_t capacity, CliArg* first, ...){
     CliArguments arguments = { .capacity = capacity };
 
-
-    if(arguments.count > arguments.capacity) arguments.count = arguments.capacity;
-
     arguments.args = (CliArg**) clib_safe_malloc(sizeof(arguments.args[0]) * arguments.capacity);
     
     if (arguments.args == NULL) {
