@@ -43,6 +43,7 @@
 #ifndef CLIB_H
 #define CLIB_H
 
+#include <stdint.h>
 #define CLIB_VERSION_MAJOR 0
 #define CLIB_VERSION_MINOR 1
 #define CLIB_VERSION_PATCH 0
@@ -63,6 +64,7 @@
 
 // START [TYPES] START //
 typedef const char * Cstr;
+typedef int8_t Bool;
 
 typedef struct {
     Cstr* items;
@@ -147,7 +149,7 @@ CLIBAPI void clib_safe_free(void **ptr);
 
 // FILES
 CLIBAPI void clib_create_file(const char *filename);
-CLIBAPI void clib_write_file(const char *filename, const char *data);
+CLIBAPI void clib_write_file(const char *filename, const char *data, Cstr mode);
 CLIBAPI char* clib_read_file(const char *filename);
 CLIBAPI void clib_delete_file(const char *filename);
 CLIBAPI void clib_append_file(const char *filename, const char *data);
@@ -181,6 +183,7 @@ CLIBAPI int clib_eu_mod(int a, int b);
 #define JOIN(sep, ...) clib_cstr_array_join(sep, clib_cstr_array_make(__VA_ARGS__, NULL))
 #define CONCAT(...) JOIN("", __VA_ARGS__)
 #define PATH(...) JOIN(PATH_SEP, __VA_ARGS__)
+CLIBAPI char* clib_format_text(const char *format, ...);
 
 // CLI
 CLIBAPI char* clib_shift_args(int *argc, char ***argv);
@@ -340,6 +343,27 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
 
 // START [IMPLEMENTATIONS] START //
 #ifdef CLIB_IMPLEMENTATION
+CLIBAPI char* clib_format_text(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    int size = vsnprintf(NULL, 0, format, args) + 1; // +1 for the null terminator
+
+    va_end(args);
+
+    char *formatted_string = (char*)malloc(size);
+    if (formatted_string == NULL) {
+        return NULL;
+    }
+
+    va_start(args, format);
+    vsnprintf(formatted_string, size, format, args);
+
+    va_end(args);
+
+    return formatted_string;
+}
+
 CLIBAPI CliArg* clib_create_argument(char abr, Cstr full, Cstr help, size_t argument_required) {
     CliArg* arg = (CliArg*) clib_safe_malloc(sizeof(CliArg));
 
@@ -797,17 +821,27 @@ CLIBAPI CstrArray clib_cstr_array_make(Cstr first, ...) {
 
 CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs) {
     if (cstrs.count == 0) {
-        return "";
+        char *empty_str = malloc(1);
+        if (empty_str == NULL) {
+            PANIC("could not allocate memory: %s", strerror(errno));
+        }
+        empty_str[0] = '\0';
+        return empty_str;
     }
 
     const size_t sep_len = strlen(sep);
     size_t len = 0;
     for (size_t i = 0; i < cstrs.count; ++i) {
-        len += strlen(cstrs.items[i]);
+        if(cstrs.items[i] != NULL)
+            len += strlen(cstrs.items[i]);
     }
 
     const size_t result_len = (cstrs.count - 1) * sep_len + len + 1;
-    char *result = malloc(sizeof(char) * result_len);
+    if (result_len <= len) { // check for overflow
+        PANIC("size overflow in clib_cstr_array_join\n");
+    }
+
+    char *result = malloc(result_len);
     if (result == NULL) {
         PANIC("could not allocate memory: %s", strerror(errno));
     }
@@ -946,8 +980,17 @@ CLIBAPI void clib_create_file(const char *filename) {
     fclose(file);
 }
 
-CLIBAPI void clib_write_file(const char *filename, const char *data) {
-    FILE *file = fopen(filename, "a");
+CLIBAPI void clib_write_file(const char *filename, const char *data, Cstr mode) {
+    if(
+        strcmp(mode, "w") &&
+        strcmp(mode, "w+") &&
+        strcmp(mode, "a") &&
+        strcmp(mode, "a+")
+    ) {
+        PANIC("Writing file using invalid mode: %s", mode);
+    }
+
+    FILE *file = fopen(filename, mode);
     if (file == NULL) {
         perror("Error opening file for writing");
         exit(EXIT_FAILURE);
