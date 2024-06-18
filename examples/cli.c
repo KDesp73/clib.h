@@ -3,11 +3,12 @@
 
 
 int main(int argc, char** argv){
-    CliArguments args = clib_make_cli_arguments(3, NULL);
-
-    clib_add_arg(clib_create_argument('h', NULL, "Prints this message", no_argument), &args);
-    clib_add_arg(clib_create_argument('v', "version", "Prints the version of the program", optional_argument), &args);
-    clib_add_arg(clib_create_argument('f', "file", "Specify the file to parse", required_argument), &args);
+    CliArguments args = clib_make_cli_arguments(4, 
+        clib_create_argument('h', NULL, "Prints this message", no_argument),
+        clib_create_argument('v', "version", "Prints the version of the program", optional_argument),
+        clib_create_argument('f', "file", "Specify the file to parse", required_argument),
+        clib_create_argument('f', "file-that-is-very-long", "Specify the file to parse", required_argument)
+    );
 
     struct option* options = clib_get_options(args);
 
