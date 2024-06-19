@@ -50,7 +50,9 @@
 
 #define CLIBAPI static
 
+#ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,8 +61,12 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/types.h>
 #include <getopt.h>
+#endif
 
 // START [TYPES] START //
 typedef const char * Cstr;
@@ -101,6 +107,7 @@ CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define BOOL(x) (x ? "true" : "false")
 
 // ANSI
+#ifndef _WIN32
 #define RESET "\e[0;39m"
 #define BOLD "\e[1m"
 #define UNDERLINE "\033[4m"
@@ -125,6 +132,9 @@ CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ANSI_CYAN "\e[0;36m"
 #define ANSI_LGREY "\e[0;37m"
 #define ANSI_DGREY "\e[0;38m"
+#else
+// TODO: Windows alternatives
+#endif // _WIN32
 
 CLIBAPI Cstr clib_color(int color, int bg);
 CLIBAPI void clib_clear_screen();
@@ -139,6 +149,8 @@ CLIBAPI char* clib_execute_command(const char* command);
 CLIBAPI char* clib_get_env(const char* varname);
 CLIBAPI int clib_set_env(const char* varname, const char* value, int overwrite);
 CLIBAPI int clib_unset_env(const char* varname);
+#else
+// TODO: Windows alternatives
 #endif
 
 // MEMORY
