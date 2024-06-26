@@ -50,9 +50,7 @@
 
 #define CLIBAPI static
 
-#ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-function"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,19 +59,15 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#ifdef _WIN32
-#include <windows.h>
-#else
 #include <sys/types.h>
 #include <getopt.h>
-#endif
 
 // START [TYPES] START //
 typedef const char * Cstr;
 typedef uint8_t Bool;
 
 typedef struct {
-    Cstr* items;
+    Cstr** items;
     size_t count;
 } CstrArray;
 
@@ -93,9 +87,6 @@ typedef struct {
 // END [TYPES] END//
 
 // START [DECLARATIONS] START //
-CLIBAPI CstrArray clib_cstr_array_make(Cstr first, ...);
-CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
-
 #ifndef _WIN32
     #define PATH_SEP "/"
 #else 
@@ -107,7 +98,6 @@ CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define BOOL(x) (x ? "true" : "false")
 
 // ANSI
-#ifndef _WIN32
 #define RESET "\e[0;39m"
 #define BOLD "\e[1m"
 #define UNDERLINE "\033[4m"
@@ -132,9 +122,6 @@ CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs);
 #define ANSI_CYAN "\e[0;36m"
 #define ANSI_LGREY "\e[0;37m"
 #define ANSI_DGREY "\e[0;38m"
-#else
-// TODO: Windows alternatives
-#endif // _WIN32
 
 CLIBAPI Cstr clib_color(int color, int bg);
 CLIBAPI void clib_clear_screen();
@@ -149,8 +136,6 @@ CLIBAPI char* clib_execute_command(const char* command);
 CLIBAPI char* clib_get_env(const char* varname);
 CLIBAPI int clib_set_env(const char* varname, const char* value, int overwrite);
 CLIBAPI int clib_unset_env(const char* varname);
-#else
-// TODO: Windows alternatives
 #endif
 
 // MEMORY
@@ -192,14 +177,13 @@ CLIBAPI int clib_file_exists(const char *filename);
 
 CLIBAPI int clib_eu_mod(int a, int b);
 #define ITOA(s, i) sprintf(s, "%d", i);
-#define JOIN(sep, ...) clib_cstr_array_join(sep, clib_cstr_array_make(__VA_ARGS__, NULL))
-#define CONCAT(...) JOIN("", __VA_ARGS__)
-#define PATH(...) JOIN(PATH_SEP, __VA_ARGS__)
+#define FTOA(s, f) sprintf(s, "%f", f);
 CLIBAPI char* clib_format_text(const char *format, ...);
 
 // CLI
 CLIBAPI char* clib_shift_args(int *argc, char ***argv);
 CLIBAPI CliArg* clib_create_argument(char abr, Cstr full, Cstr help, size_t argument_required);
+CLIBAPI void clib_clean_arguments(CliArguments* arguments);
 CLIBAPI void clib_add_arg(CliArg* arg, CliArguments* arguments);
 CLIBAPI CliArguments clib_make_cli_arguments(size_t capacity, CliArg* first, ...);
 CLIBAPI struct option* clib_get_options(CliArguments args);
@@ -225,7 +209,11 @@ typedef enum {
 CLIBAPI void clib_log(int log_level, char* format, ...);
 
 #define LOG(stream, type, format, ...) \
-    fprintf(stream, CONCAT("[%s] ", format, "\n"), type, ##__VA_ARGS__)
+    do { \
+        fprintf(stream, "[%s] ", type); \
+        fprintf(stream, format, ##__VA_ARGS__); \
+        fprintf(stream, "\n"); \
+    } while(0)
 
 #define INFO(format, ...) \
     LOG(stdout, "INFO", format, ##__VA_ARGS__)
@@ -355,23 +343,24 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
 
 // START [IMPLEMENTATIONS] START //
 #ifdef CLIB_IMPLEMENTATION
+
+// Memory leak
 CLIBAPI char* clib_format_text(const char *format, ...) {
     va_list args;
     va_start(args, format);
-
-    int size = vsnprintf(NULL, 0, format, args) + 1; // +1 for the null terminator
-
+    size_t size = vsnprintf(NULL, 0, format, args) + 1; // +1 for the null terminator
     va_end(args);
 
-    char *formatted_string = (char*)malloc(size);
+    char* formatted_string = (char*) malloc(size);
     if (formatted_string == NULL) {
         return NULL;
     }
 
     va_start(args, format);
     vsnprintf(formatted_string, size, format, args);
-
     va_end(args);
+
+    formatted_string[size-1] = '\0';
 
     return formatted_string;
 }
@@ -409,6 +398,15 @@ CLIBAPI void clib_add_arg(CliArg* arg, CliArguments* arguments){
     }
 
     arguments->args[arguments->count++] = arg;
+}
+
+CLIBAPI void clib_clean_arguments(CliArguments* arguments){
+    for(size_t i = 0; i < arguments->count; ++i){
+        free(arguments->args[i]->full);
+        free(arguments->args[i]->help);
+        free(arguments->args[i]);
+    }
+    free(arguments->args);
 }
 
 CLIBAPI CliArguments clib_make_cli_arguments(size_t capacity, CliArg* first, ...){
@@ -465,9 +463,9 @@ static size_t get_max_length(CliArguments args){
 
         size_t current_len = 0;
         if(args.args[i]->full == NULL)
-            current_len = strlen(clib_format_text("-%c", args.args[i]->abr));
+            current_len = snprintf(NULL, 0, "-%c", args.args[i]->abr);
         else
-            current_len = strlen(clib_format_text("-%c --%s", args.args[i]->abr, args.args[i]->full));
+            current_len = snprintf(NULL, 0, "-%c --%s", args.args[i]->abr, args.args[i]->full);
         if(current_len > max_len) max_len = current_len;
     }
 
@@ -477,20 +475,21 @@ static size_t get_max_length(CliArguments args){
 static char* add_spaces(size_t max_len, CliArg* arg){
     size_t arg_len = 0;
     if(arg->full == NULL)
-         arg_len = strlen(clib_format_text("-%c", arg->abr));
+        arg_len = snprintf(NULL, 0, "-%c", arg->abr);
     else 
-         arg_len = strlen(clib_format_text("-%c --%s", arg->abr, arg->full));
+         arg_len = snprintf(NULL, 0, "-%c --%s", arg->abr, arg->full);
 
     size_t GAP = 4;
-
-    char* spaces = (char*) calloc((max_len - arg_len + GAP), sizeof(char));
+    size_t final_size = max_len - arg_len + GAP + 1; // +1 for '\0'
+    char* spaces = (char*) malloc(final_size);
     if(spaces == NULL){
         return NULL;
     }
 
-    for(size_t i = 0; i < max_len - arg_len + GAP; ++i){
-        strcat(spaces, " ");
+    for(size_t i = 0; i < final_size - 1; ++i){
+        spaces[i] = ' ';
     }
+    spaces[final_size-1] = '\0';
 
     return spaces;
 }
@@ -514,13 +513,15 @@ CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer){
         }
 
         char* spaces = add_spaces(max_len, args.args[i]);
+        if(spaces == NULL) return;
+        Cstr arg_required = COLOR_FG(args.args[i]->argument_required + 1);
         if(args.args[i]->full){
             printf("-%c --%s%s%s %s[%s]%s\n", 
                 args.args[i]->abr, 
                 args.args[i]->full,
                 spaces,
                 args.args[i]->help,
-                COLOR_FG(args.args[i]->argument_required + 1),
+                arg_required,
                 has_arg,
                 RESET
             );
@@ -529,11 +530,12 @@ CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer){
                 args.args[i]->abr, 
                 spaces,
                 args.args[i]->help,
-                COLOR_FG(args.args[i]->argument_required + 1),
+                arg_required,
                 has_arg,
                 RESET
             );
         }
+        free((char*) arg_required);
         free(spaces);
     }
     printf("\n");
@@ -558,7 +560,7 @@ CLIBAPI char* clib_generate_cli_format_string(CliArguments args) {
     fmt[0] = '\0';
 
     for (size_t i = 0; i < args.count; ++i) {
-        char abr[1] = {args.args[i]->abr};
+        char abr[2] = {args.args[i]->abr, 0};
         strcat(fmt, abr);
         if (args.args[i]->argument_required) {
             strcat(fmt, ":");
@@ -575,10 +577,10 @@ CLIBAPI void clib_log(int log_level, char* format, ...){
         fprintf(stderr, "[INFO] ");
         break;
     case CLIB_WARN:
-        fprintf(stderr, "[WARNING] ");
+        fprintf(stderr, "[WARN] ");
         break;
     case CLIB_ERRO:
-        fprintf(stderr, "[ERROR] ");
+        fprintf(stderr, "[ERRO] ");
         break;
     case CLIB_DEBU:
         fprintf(stderr, "[DEBU] ");
@@ -854,82 +856,6 @@ CLIBAPI int clib_eu_mod(int a, int b){
     return r;
 }
 
-CLIBAPI CstrArray clib_cstr_array_make(Cstr first, ...) {
-    CstrArray result = {0};
-
-    if (first == NULL) {
-        return result;
-    }
-
-    result.count += 1;
-
-    va_list args;
-    va_start(args, first);
-    for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
-        result.count += 1;
-    }
-    va_end(args);
-
-    result.items = (Cstr*) malloc(sizeof(result.items[0]) * result.count);
-    if (result.items == NULL) {
-        PANIC("could not allocate memory: %s", strerror(errno));
-    }
-    result.count = 0;
-
-    result.items[result.count++] = first;
-
-    va_start(args, first);
-    for (Cstr next = va_arg(args, Cstr); next != NULL; next = va_arg(args, Cstr)) {
-        result.items[result.count++] = next;
-    }
-    va_end(args);
-
-    return result;
-}
-
-CLIBAPI Cstr clib_cstr_array_join(Cstr sep, CstrArray cstrs) {
-    if (cstrs.count == 0) {
-        char *empty_str = (char*) malloc(1);
-        if (empty_str == NULL) {
-            PANIC("could not allocate memory: %s", strerror(errno));
-        }
-        empty_str[0] = '\0';
-        return empty_str;
-    }
-
-    const size_t sep_len = strlen(sep);
-    size_t len = 0;
-    for (size_t i = 0; i < cstrs.count; ++i) {
-        if(cstrs.items[i] != NULL)
-            len += strlen(cstrs.items[i]);
-    }
-
-    const size_t result_len = (cstrs.count - 1) * sep_len + len + 1;
-    if (result_len <= len) { // check for overflow
-        PANIC("size overflow in clib_cstr_array_join\n");
-    }
-
-    char *result = (char*) malloc(result_len);
-    if (result == NULL) {
-        PANIC("could not allocate memory: %s", strerror(errno));
-    }
-
-    len = 0;
-    for (size_t i = 0; i < cstrs.count; ++i) {
-        if (i > 0) {
-            memcpy(result + len, sep, sep_len);
-            len += sep_len;
-        }
-
-        size_t elem_len = strlen(cstrs.items[i]);
-        memcpy(result + len, cstrs.items[i], elem_len);
-        len += elem_len;
-    }
-    result[len] = '\0';
-
-    return result;
-}
-
 CLIBAPI char* clib_shift_args(int *argc, char ***argv) {
     assert(*argc > 0);
     char *result = **argv;
@@ -945,7 +871,7 @@ CLIBAPI Cstr clib_color(int color, int bg) {
     ITOA(where_code, bg + 3);
     ITOA(color_string, color);
 
-    return CONCAT("\e[", where_code, "8;5;", color_string, "m");
+    return (Cstr) clib_format_text("\e[%s8;5;%sm", where_code, color_string);
 }
 
 CLIBAPI void clib_clear_screen() {
