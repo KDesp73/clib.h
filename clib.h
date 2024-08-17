@@ -31,7 +31,7 @@
  *
  * -[TOC]-
  * 1. SYSTEM
- * 2. MEMORY
+ * 2. SAFE MEMORY
  * 3. MENUS // needs its own define!
  * 4. UTILS
  * 5. ANSI
@@ -45,10 +45,12 @@
 
 #define CLIB_VERSION_MAJOR 0
 #define CLIB_VERSION_MINOR 1
-#define CLIB_VERSION_PATCH 0
-#define CLIB_VERSION  "0.1.0"
+#define CLIB_VERSION_PATCH 1
+#define CLIB_VERSION  "0.1.1"
 
-#define CLIBAPI static
+#ifndef CLIBAPI
+    #define CLIBAPI static
+#endif
 
 #pragma GCC diagnostic ignored "-Wunused-function"
 
@@ -60,6 +62,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <getopt.h>
 
 // START [TYPES] START //
@@ -67,7 +70,7 @@ typedef const char * Cstr;
 typedef uint8_t Bool;
 
 typedef struct {
-    Cstr** items;
+    Cstr* items;
     size_t count;
 } CstrArray;
 
@@ -98,20 +101,20 @@ typedef struct {
 #define BOOL(x) (x ? "true" : "false")
 
 // ANSI
-#define RESET "\e[0;39m"
-#define BOLD "\e[1m"
-#define UNDERLINE "\033[4m"
-#define ITALIC "\e[3m"
-#define CLEAR "\e[2J"
-#define ERASE_LINE "\e[2K"
-#define HIDE_CURSOR() printf("\e[?25l")
-#define SHOW_CURSOR() printf("\e[?25h")
-#define GOTOXY(x,y) printf("\033[%d;%dH", (y), (x))
-#define MOVE_CURSOR_UP(x) printf("\033[%zuA", x)
-#define MOVE_CURSOR_DOWN(x) printf("\033[%dB", x);
-#define MOVE_CURSOR_RIGHT(x) printf("\033[%dC", x);
-#define MOVE_CURSOR_LEFT(x) printf("\033[%dD", x);
-#define CLEAR_BELOW_CURSOR printf("\033[J")
+#define ANSI_RESET "\e[0;39m"
+#define ANSI_BOLD "\e[1m"
+#define ANSI_UNDERLINE "\033[4m"
+#define ANSI_ITALIC "\e[3m"
+#define ANSI_CLEAR "\e[2J"
+#define ANSI_ERASE_LINE "\e[2K"
+#define ANSI_HIDE_CURSOR() printf("\e[?25l")
+#define ANSI_SHOW_CURSOR() printf("\e[?25h")
+#define ANSI_GOTOXY(x,y) printf("\033[%d;%dH", (y), (x))
+#define ANSI_MOVE_CURSOR_UP(x) printf("\033[%zuA", x)
+#define ANSI_MOVE_CURSOR_DOWN(x) printf("\033[%dB", x);
+#define ANSI_MOVE_CURSOR_RIGHT(x) printf("\033[%dC", x);
+#define ANSI_MOVE_CURSOR_LEFT(x) printf("\033[%dD", x);
+#define ANSI_CLEAR_BELOW_CURSOR printf("\033[J")
 
 #define ANSI_BLACK "\e[0;30m"
 #define ANSI_RED "\e[0;31m"
@@ -123,37 +126,51 @@ typedef struct {
 #define ANSI_LGREY "\e[0;37m"
 #define ANSI_DGREY "\e[0;38m"
 
-CLIBAPI Cstr clib_color(int color, int bg);
-CLIBAPI void clib_clear_screen();
-CLIBAPI void clib_print_color_table();
+CLIBAPI Cstr clib_ansi_color(int color, int bg);
+CLIBAPI void clib_ansi_clear_screen();
+CLIBAPI void clib_ansi_print_color_table();
 
-#define COLOR_BG(c) clib_color(c, 1)
-#define COLOR_FG(c) clib_color(c, 0)
+#define COLOR_BG(c) clib_ansi_color(c, 1)
+#define COLOR_FG(c) clib_ansi_color(c, 0)
 
 // SYSTEM
 #ifndef _WIN32
-CLIBAPI char* clib_execute_command(const char* command);
-CLIBAPI char* clib_get_env(const char* varname);
-CLIBAPI int clib_set_env(const char* varname, const char* value, int overwrite);
-CLIBAPI int clib_unset_env(const char* varname);
+CLIBAPI char* clib_system_execute_command(const char* command);
+CLIBAPI char* clib_system_get_env(const char* varname);
+CLIBAPI int clib_system_set_env(const char* varname, const char* value, int overwrite);
+CLIBAPI int clib_system_unset_env(const char* varname);
 #endif
 
-// MEMORY
+// SAFE MEMORY
 CLIBAPI void* clib_safe_malloc(size_t size);
 CLIBAPI void* clib_safe_calloc(size_t nmemb, size_t size);
 CLIBAPI void* clib_safe_realloc(void *ptr, size_t size);
 CLIBAPI void clib_safe_free(void **ptr);
 
 // FILES
-CLIBAPI void clib_create_file(const char *filename);
-CLIBAPI void clib_write_file(const char *filename, const char *data, Cstr mode);
-CLIBAPI char* clib_read_file(const char *filename);
-CLIBAPI void clib_delete_file(const char *filename);
-CLIBAPI void clib_append_file(const char *filename, const char *data);
-CLIBAPI void clib_copy_file(const char *source, const char *destination);
-CLIBAPI void clib_move_file(const char *source, const char *destination);
-CLIBAPI long clib_file_size(const char *filename);
+CLIBAPI int clib_file_create_directory(const char *path);
+CLIBAPI int clib_file_directory_exists(const char *path);
+CLIBAPI void clib_file_create(const char *filename);
+CLIBAPI void clib_file_write(const char *filename, const char *data, Cstr mode);
+CLIBAPI char* clib_file_read(const char *filename, const char* mode);
+CLIBAPI void clib_file_delete(const char *filename);
+CLIBAPI void clib_file_append(const char *filename, const char *data);
+CLIBAPI void clib_file_copy(const char *source, const char *destination);
+CLIBAPI void clib_file_move(const char *source, const char *destination);
+CLIBAPI long clib_file_file(const char *filename);
 CLIBAPI int clib_file_exists(const char *filename);
+
+// STRINGS
+#define ITOA(i) clib_str_format("%d", i) 
+#define FTOA(f) clib_str_format("%f", f)
+#define STR(x) #x
+#define STREQ(x, y) (strcmp(x, y) == 0) 
+CLIBAPI char* clib_str_format(const char *format, ...);
+CLIBAPI char* clib_str_buffer_init();
+CLIBAPI void clib_str_append_ln(char** buffer, Cstr text);
+CLIBAPI void clib_str_append(char** buffer, const char* text);
+CLIBAPI void clib_str_clean(char** buffer);
+CLIBAPI void println(const char* fmt, ...);
 
 // UTILS
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -176,18 +193,19 @@ CLIBAPI int clib_file_exists(const char *filename);
 #endif
 
 CLIBAPI int clib_eu_mod(int a, int b);
-#define ITOA(s, i) sprintf(s, "%d", i);
-#define FTOA(s, f) sprintf(s, "%f", f);
-CLIBAPI char* clib_format_text(const char *format, ...);
 
 // CLI
-CLIBAPI char* clib_shift_args(int *argc, char ***argv);
-CLIBAPI CliArg* clib_create_argument(char abr, Cstr full, Cstr help, size_t argument_required);
-CLIBAPI void clib_clean_arguments(CliArguments* arguments);
-CLIBAPI void clib_add_arg(CliArg* arg, CliArguments* arguments);
-CLIBAPI CliArguments clib_make_cli_arguments(size_t capacity, CliArg* first, ...);
-CLIBAPI struct option* clib_get_options(CliArguments args);
-CLIBAPI char* clib_generate_cli_format_string(CliArguments args);
+
+#define LOOP_ARGS(opt, args) \
+    while((opt = getopt_long(argc, argv, clib_cli_generate_format_string(args), clib_cli_get_options(args), NULL)) != -1)
+
+CLIBAPI char* clib_cli_shift_args(int *argc, char ***argv);
+CLIBAPI CliArg* clib_cli_create_argument(char abr, Cstr full, Cstr help, size_t argument_required);
+CLIBAPI void clib_cli_clean_arguments(CliArguments* arguments);
+CLIBAPI void clib_cli_add_arg(CliArg* arg, CliArguments* arguments);
+CLIBAPI CliArguments clib_cli_make_arguments(size_t capacity, CliArg* first, ...);
+CLIBAPI struct option* clib_cli_get_options(CliArguments args);
+CLIBAPI char* clib_cli_generate_format_string(CliArguments args);
 CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer);
 
 // LOGGING
@@ -343,9 +361,61 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
 
 // START [IMPLEMENTATIONS] START //
 #ifdef CLIB_IMPLEMENTATION
+CLIBAPI char* clib_str_buffer_init()
+{
+    char* buffer = (char*) malloc(1);
+    memset(buffer, 0, 1);
 
-// Memory leak
-CLIBAPI char* clib_format_text(const char *format, ...) {
+    return buffer;
+}
+
+CLIBAPI void clib_str_append_ln(char** buffer, Cstr text)
+{
+    assert(buffer != NULL && *buffer != NULL);
+    assert(text != NULL);
+
+    Cstr new_text = clib_str_format("%s\n", text);
+    size_t new_size = strlen(*buffer) + strlen(new_text) + 1;
+    *buffer = (char*) realloc(*buffer, new_size);
+    if (*buffer == NULL) {
+        PANIC("Failed to reallocate memory");
+    }
+    strcat(*buffer, new_text);
+    free((char*) new_text);
+}
+
+CLIBAPI void clib_str_append(char** buffer, const char* text)
+{
+    assert(buffer != NULL && *buffer != NULL);
+    assert(text != NULL);
+
+    size_t current_size = strlen(*buffer);
+    size_t text_len = strlen(text);
+
+    *buffer = (char*) realloc(*buffer, current_size + text_len + 1);
+    if (*buffer == NULL) {
+        PANIC("Failed to reallocate memory");
+    }
+
+    strcat(*buffer, text);
+}
+
+CLIBAPI void clib_str_clean(char** buffer)
+{
+    free(*buffer);
+    *buffer = NULL;
+}
+
+CLIBAPI void println(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    printf(fmt, args);
+    va_end(args);
+}
+
+CLIBAPI char* clib_str_format(const char *format, ...)
+{
     va_list args;
     va_start(args, format);
     size_t size = vsnprintf(NULL, 0, format, args) + 1; // +1 for the null terminator
@@ -365,7 +435,8 @@ CLIBAPI char* clib_format_text(const char *format, ...) {
     return formatted_string;
 }
 
-CLIBAPI CliArg* clib_create_argument(char abr, Cstr full, Cstr help, size_t argument_required) {
+CLIBAPI CliArg* clib_cli_create_argument(char abr, Cstr full, Cstr help, size_t argument_required)
+{
     CliArg* arg = (CliArg*) clib_safe_malloc(sizeof(CliArg));
 
     if(full){
@@ -391,7 +462,8 @@ CLIBAPI CliArg* clib_create_argument(char abr, Cstr full, Cstr help, size_t argu
     return arg;
 }
 
-CLIBAPI void clib_add_arg(CliArg* arg, CliArguments* arguments){
+CLIBAPI void clib_cli_add_arg(CliArg* arg, CliArguments* arguments)
+{
     if(arguments->capacity <= arguments->count) {
         ERRO("Max capacity");
         return;
@@ -400,7 +472,8 @@ CLIBAPI void clib_add_arg(CliArg* arg, CliArguments* arguments){
     arguments->args[arguments->count++] = arg;
 }
 
-CLIBAPI void clib_clean_arguments(CliArguments* arguments){
+CLIBAPI void clib_cli_clean_arguments(CliArguments* arguments)
+{
     for(size_t i = 0; i < arguments->count; ++i){
         free(arguments->args[i]->full);
         free(arguments->args[i]->help);
@@ -409,7 +482,8 @@ CLIBAPI void clib_clean_arguments(CliArguments* arguments){
     free(arguments->args);
 }
 
-CLIBAPI CliArguments clib_make_cli_arguments(size_t capacity, CliArg* first, ...){
+CLIBAPI CliArguments clib_cli_make_arguments(size_t capacity, CliArg* first, ...)
+{
     CliArguments arguments = { .capacity = capacity };
 
     arguments.args = (CliArg**) clib_safe_malloc(sizeof(arguments.args[0]) * arguments.capacity);
@@ -434,7 +508,8 @@ CLIBAPI CliArguments clib_make_cli_arguments(size_t capacity, CliArg* first, ...
     return arguments;
 }
 
-CLIBAPI struct option* clib_get_options(CliArguments args) {
+CLIBAPI struct option* clib_cli_get_options(CliArguments args)
+{
     if (args.count == 0) {
         return NULL;
     }
@@ -455,7 +530,8 @@ CLIBAPI struct option* clib_get_options(CliArguments args) {
     return options;
 }
 
-static size_t get_max_length(CliArguments args){
+static size_t get_max_length(CliArguments args)
+{
     size_t max_len = 0;
 
     for(size_t i = 0; i < args.count; ++i){
@@ -472,7 +548,8 @@ static size_t get_max_length(CliArguments args){
     return max_len;
 }
 
-static char* add_spaces(size_t max_len, CliArg* arg){
+static char* add_spaces(size_t max_len, CliArg* arg)
+{
     size_t arg_len = 0;
     if(arg->full == NULL)
         arg_len = snprintf(NULL, 0, "-%c", arg->abr);
@@ -494,7 +571,8 @@ static char* add_spaces(size_t max_len, CliArg* arg){
     return spaces;
 }
 
-CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer){
+CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer)
+{
     if(usage) printf("Usage: %s\n\n", usage);
 
     size_t max_len = get_max_length(args);
@@ -523,7 +601,7 @@ CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer){
                 args.args[i]->help,
                 arg_required,
                 has_arg,
-                RESET
+                ANSI_RESET
             );
         } else {
             printf("-%c%s%s %s[%s]%s\n", 
@@ -532,7 +610,7 @@ CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer){
                 args.args[i]->help,
                 arg_required,
                 has_arg,
-                RESET
+                ANSI_RESET
             );
         }
         free((char*) arg_required);
@@ -543,7 +621,8 @@ CLIBAPI void clib_cli_help(CliArguments args, Cstr usage, Cstr footer){
     if(footer) printf("%s\n", footer);
 }
 
-CLIBAPI char* clib_generate_cli_format_string(CliArguments args) {
+CLIBAPI char* clib_cli_generate_format_string(CliArguments args)
+{
     size_t length = 1;
     for (size_t i = 0; i < args.count; ++i) {
         length += 1;
@@ -561,17 +640,17 @@ CLIBAPI char* clib_generate_cli_format_string(CliArguments args) {
 
     for (size_t i = 0; i < args.count; ++i) {
         char abr[2] = {args.args[i]->abr, 0};
+        if(args.args[i]->argument_required == optional_argument) strcat(fmt, ":");
         strcat(fmt, abr);
-        if (args.args[i]->argument_required) {
-            strcat(fmt, ":");
-        }
+        if (args.args[i]->argument_required) strcat(fmt, ":");
     }
     strcat(fmt, "\0");
 
     return fmt;
 }
 
-CLIBAPI void clib_log(int log_level, char* format, ...){
+CLIBAPI void clib_log(int log_level, char* format, ...)
+{
     switch(log_level){
     case CLIB_INFO:
         fprintf(stderr, "[INFO] ");
@@ -634,7 +713,7 @@ CLIBAPI void clib_enable_input_buffering(){
         tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
     #endif
-    SHOW_CURSOR();
+    ANSI_SHOW_CURSOR();
 }
 
 CLIBAPI void clib_disable_input_buffering(){
@@ -651,7 +730,7 @@ CLIBAPI void clib_disable_input_buffering(){
         tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
     #endif
-    HIDE_CURSOR();
+    ANSI_HIDE_CURSOR();
 }
 
 CLIBAPI int clib_getch() {
@@ -760,15 +839,15 @@ CLIBAPI int clib_getch() {
 
 
 CLIBAPI void clib_default_print_option(Cstr option, int is_selected, int color){
-    is_selected ? printf("%s%s%s", COLOR_BG(color), option, RESET) : printf("%s", option);
+    is_selected ? printf("%s%s%s", COLOR_BG(color), option, ANSI_RESET) : printf("%s", option);
 }
 
 CLIBAPI void clib_arrow_print_option(Cstr option, int is_selected, int color){
-    is_selected ? printf("%s>%s %s", COLOR_FG(color), RESET, option) : printf("  %s", option);
+    is_selected ? printf("%s>%s %s", COLOR_FG(color), ANSI_RESET, option) : printf("  %s", option);
 }
 
 CLIBAPI void clib_brackets_print_option(Cstr option, int is_selected, int color){
-    is_selected ? printf("%s[%s%s%s]%s", COLOR_FG(color), RESET, option, COLOR_FG(color), RESET) : printf(" %s ", option);
+    is_selected ? printf("%s[%s%s%s]%s", COLOR_FG(color), ANSI_RESET, option, COLOR_FG(color), RESET) : printf(" %s ", option);
 }
 
 CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
@@ -813,7 +892,7 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
 
     while(true){
         if(title != NULL){
-            printf("%s%s%s\n", COLOR_FG(color), title, RESET);
+            printf("%s%s%s\n", COLOR_FG(color), title, ANSI_RESET);
         }
         for(size_t i = 0; i < options.count; ++i){
             print_option(options.items[i], selected == i, color);
@@ -836,8 +915,8 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
                 break;
         }
 
-        MOVE_CURSOR_UP(options.count + (title != NULL));
-        CLEAR_BELOW_CURSOR;
+        ANSI_MOVE_CURSOR_UP(options.count + (title != NULL));
+        ANSI_CLEAR_BELOW_CURSOR;
     }
 }
 #endif // CLIB_MENUS
@@ -856,7 +935,7 @@ CLIBAPI int clib_eu_mod(int a, int b){
     return r;
 }
 
-CLIBAPI char* clib_shift_args(int *argc, char ***argv) {
+CLIBAPI char* clib_cli_shift_args(int *argc, char ***argv) {
     assert(*argc > 0);
     char *result = **argv;
     *argc -= 1;
@@ -864,17 +943,19 @@ CLIBAPI char* clib_shift_args(int *argc, char ***argv) {
     return result;
 }
 
-CLIBAPI Cstr clib_color(int color, int bg) {
+CLIBAPI Cstr clib_ansi_color(int color, int bg) {
     if (color < 0 || color > 255) return "";
 
-    char where_code[12], color_string[12];
-    ITOA(where_code, bg + 3);
-    ITOA(color_string, color);
+    char* where_code = ITOA(bg + 3);
+    char* color_string = ITOA(color);
 
-    return (Cstr) clib_format_text("\e[%s8;5;%sm", where_code, color_string);
+    char* color_str = clib_str_format("\e[%s8;5;%sm", where_code, color_string);
+    free(where_code);
+    free(color_string);
+    return color_str;
 }
 
-CLIBAPI void clib_clear_screen() {
+CLIBAPI void clib_ansi_clear_screen() {
 #ifdef _WIN32
     system("cls"); // Clear screen for Windows
 #else
@@ -883,17 +964,17 @@ CLIBAPI void clib_clear_screen() {
 }
 
 
-CLIBAPI void clib_print_color_table(){
+CLIBAPI void clib_ansi_print_color_table(){
     for(int i = 0; i < 256; i++){
         if(i % 21 == 0) printf("\n");
         
-        printf("%s%3d ", clib_color(i, 0), i);
+        printf("%s%3d ", clib_ansi_color(i, 0), i);
     }
-    printf("%s\n", RESET);
+    printf("%s\n", ANSI_RESET);
 }
 
 
-CLIBAPI void clib_copy_file(const char *source, const char *destination) {
+CLIBAPI void clib_file_copy(const char *source, const char *destination) {
     FILE *srcFile = fopen(source, "r");
     if (srcFile == NULL) {
         perror("Error opening source file");
@@ -922,14 +1003,14 @@ CLIBAPI void clib_copy_file(const char *source, const char *destination) {
     fclose(destFile);
 }
 
-CLIBAPI void clib_move_file(const char *source, const char *destination) {
+CLIBAPI void clib_file_move(const char *source, const char *destination) {
     if (rename(source, destination) != 0) {
         perror("Error moving/renaming file");
         exit(EXIT_FAILURE);
     }
 }
 
-CLIBAPI long clib_file_size(const char *filename) {
+CLIBAPI long clib_file_file(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
@@ -951,7 +1032,7 @@ CLIBAPI int clib_file_exists(const char *filename) {
     return 0;
 }
 
-CLIBAPI void clib_append_file(const char *filename, const char *data) {
+CLIBAPI void clib_file_append(const char *filename, const char *data) {
     FILE *file = fopen(filename, "a");
     if (file == NULL) {
         perror("Error opening file for appending");
@@ -965,7 +1046,39 @@ CLIBAPI void clib_append_file(const char *filename, const char *data) {
     fclose(file);
 }
 
-CLIBAPI void clib_create_file(const char *filename) {
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#define MKDIR(path) mkdir(path, 0755) // 0755 is the permission mode
+#endif
+
+CLIBAPI int clib_file_create_directory(const char *path)
+{
+    if (MKDIR(path) == 0) {
+        return 1;
+    } else {
+        if (errno == EEXIST) {
+            printf("Directory already exists: %s\n", path);
+        } else {
+            perror("Error creating directory");
+        }
+        return 0; 
+    }
+}
+
+CLIBAPI int clib_file_directory_exists(const char *path)
+{
+    struct stat statbuf;
+
+    if (stat(path, &statbuf) != 0) {
+        return 0;
+    }
+
+    return S_ISDIR(statbuf.st_mode);
+}
+
+CLIBAPI void clib_file_create(const char *filename) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Error creating file");
@@ -974,11 +1087,13 @@ CLIBAPI void clib_create_file(const char *filename) {
     fclose(file);
 }
 
-CLIBAPI void clib_write_file(const char *filename, const char *data, Cstr mode) {
+CLIBAPI void clib_file_write(const char *filename, const char *data, Cstr mode) {
     if(
         strcmp(mode, "w") &&
         strcmp(mode, "w+") &&
+        strcmp(mode, "wb") &&
         strcmp(mode, "a") &&
+        strcmp(mode, "ab") &&
         strcmp(mode, "a+")
     ) {
         PANIC("Writing file using invalid mode: %s", mode);
@@ -997,8 +1112,8 @@ CLIBAPI void clib_write_file(const char *filename, const char *data, Cstr mode) 
     fclose(file);
 }
 
-CLIBAPI char* clib_read_file(const char *filename) {
-    FILE *file = fopen(filename, "r");
+CLIBAPI char* clib_file_read(const char *filename, const char* mode) {
+    FILE *file = fopen(filename, mode);
     if (file == NULL) {
         perror("Error opening file for reading");
         return NULL;
@@ -1029,7 +1144,7 @@ CLIBAPI char* clib_read_file(const char *filename) {
     return buffer;
 }
 
-CLIBAPI void clib_delete_file(const char *filename) {
+CLIBAPI void clib_file_delete(const char *filename) {
     if (remove(filename) != 0) {
         perror("Error deleting file");
         exit(EXIT_FAILURE);
@@ -1071,7 +1186,7 @@ CLIBAPI void clib_safe_free(void **ptr) {
 }
 
 #ifndef _WIN32
-CLIBAPI char* clib_execute_command(const char* command) {
+CLIBAPI char* clib_system_execute_command(const char* command) {
     char buffer[128];
     char *result = NULL;
     size_t result_size = 0;
@@ -1082,7 +1197,7 @@ CLIBAPI char* clib_execute_command(const char* command) {
 
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
         size_t buffer_len = strlen(buffer);
-        result = realloc(result, result_size + buffer_len + 1);
+        result = (char*) realloc(result, result_size + buffer_len + 1);
         if (!result) {
             pclose(pipe);
             return NULL;
@@ -1095,7 +1210,7 @@ CLIBAPI char* clib_execute_command(const char* command) {
     return result;
 }
 
-CLIBAPI char* clib_get_env(const char* varname) {
+CLIBAPI char* clib_system_get_env(const char* varname) {
     return getenv(varname);
 }
 
@@ -1103,14 +1218,13 @@ CLIBAPI int set_envclib_(const char* varname, const char* value, int overwrite) 
     return setenv(varname, value, overwrite);
 }
 
-CLIBAPI int clib_unset_env(const char* varname) {
+CLIBAPI int clib_system_unset_env(const char* varname) {
     return unsetenv(varname);
 }
 #endif
 
 #endif // CLIB_IMPLEMENTATION
 // END [IMPLEMENTATIONS] END//
-
 
 
 #endif // CLIB_H

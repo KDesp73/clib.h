@@ -1,4 +1,4 @@
 TODO: documentation
-TODO: ensure windows compatibility
+TODO: more string utilities
 DONE: another option being added to the menu when printing above it
 DONE: fix help tabs
