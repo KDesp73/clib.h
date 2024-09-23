@@ -26,7 +26,6 @@
 /*
  * Usage: 
  * #define CLIB_IMPLEMENTATION
- * #define CLIB_MENUS // if you want to use the menu methods
  * #inlcude "clib.h"
  *
  * -[TOC]-
@@ -170,6 +169,7 @@ CLIBAPI char* clib_str_buffer_init();
 CLIBAPI void clib_str_append_ln(char** buffer, Cstr text);
 CLIBAPI void clib_str_append(char** buffer, const char* text);
 CLIBAPI void clib_str_clean(char** buffer);
+CLIBAPI char* clib_str_replace(const char* str, const char* search, const char* replace);
 CLIBAPI void println(const char* fmt, ...);
 
 // UTILS
@@ -268,7 +268,7 @@ CLIBAPI void clib_log(int log_level, char* format, ...);
     #include <termios.h>
     #include <unistd.h>
 
-    int _getch();
+    CLIBAPI int _getch();
 #endif
 
 // TODO: Add more keys
@@ -279,6 +279,8 @@ typedef enum {
     CLIB_KEY_TAB = 9,
     CLIB_KEY_ESC = 27,
     CLIB_KEY_SPACE = 32,
+
+    // numbers
     CLIB_KEY_0 = '0',
     CLIB_KEY_1 = '1',
     CLIB_KEY_2 = '2',
@@ -289,6 +291,8 @@ typedef enum {
     CLIB_KEY_7 = '7',
     CLIB_KEY_8 = '8',
     CLIB_KEY_9 = '9',
+
+    // uppercase
     CLIB_KEY_A = 'A',
     CLIB_KEY_B = 'B',
     CLIB_KEY_C = 'C',
@@ -315,6 +319,8 @@ typedef enum {
     CLIB_KEY_X = 'X',
     CLIB_KEY_Y = 'Y',
     CLIB_KEY_Z = 'Z',
+
+    // lowercase
     CLIB_KEY_a = 'a',
     CLIB_KEY_b = 'b',
     CLIB_KEY_c = 'c',
@@ -341,7 +347,42 @@ typedef enum {
     CLIB_KEY_x = 'x',
     CLIB_KEY_y = 'y',
     CLIB_KEY_z = 'z',
-    // Defined later
+
+    // special characters
+    CLIB_KEY_EXCLAMATION = '!',
+    CLIB_KEY_AT = '@',
+    CLIB_KEY_HASH = '#',
+    CLIB_KEY_DOLLAR = '$',
+    CLIB_KEY_PERCENT = '%',
+    CLIB_KEY_CARET = '^',
+    CLIB_KEY_AMPERSAND = '&',
+    CLIB_KEY_ASTERISK = '*',
+    CLIB_KEY_LEFT_PAREN = '(',
+    CLIB_KEY_RIGHT_PAREN = ')',
+    CLIB_KEY_DASH = '-',
+    CLIB_KEY_UNDERSCORE = '_',
+    CLIB_KEY_EQUAL = '=',
+    CLIB_KEY_PLUS = '+',
+    CLIB_KEY_LEFT_BRACKET = '[',
+    CLIB_KEY_RIGHT_BRACKET = ']',
+    CLIB_KEY_LEFT_BRACE = '{',
+    CLIB_KEY_RIGHT_BRACE = '}',
+    CLIB_KEY_SEMICOLON = ';',
+    CLIB_KEY_COLON = ':',
+    CLIB_KEY_SINGLE_QUOTE = '\'',
+    CLIB_KEY_DOUBLE_QUOTE = '"',
+    CLIB_KEY_COMMA = ',',
+    CLIB_KEY_PERIOD = '.',
+    CLIB_KEY_LESS = '<',
+    CLIB_KEY_GREATER = '>',
+    CLIB_KEY_SLASH = '/',
+    CLIB_KEY_QUESTION = '?',
+    CLIB_KEY_BACKSLASH = '\\',
+    CLIB_KEY_PIPE = '|',
+    CLIB_KEY_BACKTICK = '`',
+    CLIB_KEY_TILDE = '~',
+
+    // arrows (defined later)
     CLIB_KEY_ARROW_UP,
     CLIB_KEY_ARROW_DOWN,
     CLIB_KEY_ARROW_LEFT,
@@ -412,6 +453,39 @@ CLIBAPI void println(const char* fmt, ...)
     va_start(args, fmt);
     printf(fmt, args);
     va_end(args);
+}
+
+CLIBAPI char* clib_str_replace(const char* str, const char* search, const char* replace)
+{
+    char* result = NULL;
+    char* idx = NULL;
+    size_t search_len = strlen(search);
+    size_t replace_len = strlen(replace);
+    size_t str_len = strlen(str);
+    size_t buffer_size = str_len;
+
+    // Allocate initial buffer
+    result = (char*)malloc(buffer_size + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+    strcpy(result, str);
+
+    // Find and replace all occurrences
+    idx = strstr(result, search);
+    while (idx != NULL) {
+        size_t offset = idx - result;
+        buffer_size += replace_len - search_len;
+        result = (char*)realloc(result, buffer_size + 1);
+        if (result == NULL) {
+            return NULL;
+        }
+        memmove(result + offset + replace_len, result + offset + search_len, strlen(result + offset + search_len) + 1);
+        memcpy(result + offset, replace, replace_len);
+        idx = strstr(result + offset + replace_len, search);
+    }
+
+    return result;
 }
 
 CLIBAPI char* clib_str_format(const char *format, ...)
@@ -680,9 +754,8 @@ CLIBAPI void clib_log(int log_level, char* format, ...)
     if(log_level == CLIB_PANIC) exit(1);
 }
 
-#ifdef CLIB_MENUS
 #ifndef _WIN32
-    int _getch() {
+    CLIBAPI int _getch() {
         struct termios oldt, newt;
         int ch;
         tcgetattr(STDIN_FILENO, &oldt);
@@ -832,8 +905,40 @@ CLIBAPI int clib_getch() {
         case 'x': return CLIB_KEY_x;
         case 'y': return CLIB_KEY_y;
         case 'z': return CLIB_KEY_z;
-        // Add other mappings as needed
-        default: return CLIB_KEY_UNKNOWN;
+        case '!': return CLIB_KEY_EXCLAMATION;
+        case '@': return CLIB_KEY_AT;
+        case '#': return CLIB_KEY_HASH;
+        case '$': return CLIB_KEY_DOLLAR;
+        case '%': return CLIB_KEY_PERCENT;
+        case '^': return CLIB_KEY_CARET;
+        case '&': return CLIB_KEY_AMPERSAND;
+        case '*': return CLIB_KEY_ASTERISK;
+        case '(': return CLIB_KEY_LEFT_PAREN;
+        case ')': return CLIB_KEY_RIGHT_PAREN;
+        case '-': return CLIB_KEY_DASH;
+        case '_': return CLIB_KEY_UNDERSCORE;
+        case '=': return CLIB_KEY_EQUAL;
+        case '+': return CLIB_KEY_PLUS;
+        case '[': return CLIB_KEY_LEFT_BRACKET;
+        case ']': return CLIB_KEY_RIGHT_BRACKET;
+        case '{': return CLIB_KEY_LEFT_BRACE;
+        case '}': return CLIB_KEY_RIGHT_BRACE;
+        case ';': return CLIB_KEY_SEMICOLON;
+        case ':': return CLIB_KEY_COLON;
+        case '\'': return CLIB_KEY_SINGLE_QUOTE;
+        case '"': return CLIB_KEY_DOUBLE_QUOTE;
+        case ',': return CLIB_KEY_COMMA;
+        case '.': return CLIB_KEY_PERIOD;
+        case '<': return CLIB_KEY_LESS;
+        case '>': return CLIB_KEY_GREATER;
+        case '/': return CLIB_KEY_SLASH;
+        case '?': return CLIB_KEY_QUESTION;
+        case '\\': return CLIB_KEY_BACKSLASH;
+        case '|': return CLIB_KEY_PIPE;
+        case '`': return CLIB_KEY_BACKTICK;
+        case '~': return CLIB_KEY_TILDE;
+
+        default: return ch;
     }
 }
 
@@ -847,14 +952,13 @@ CLIBAPI void clib_arrow_print_option(Cstr option, int is_selected, int color){
 }
 
 CLIBAPI void clib_brackets_print_option(Cstr option, int is_selected, int color){
-    is_selected ? printf("%s[%s%s%s]%s", COLOR_FG(color), ANSI_RESET, option, COLOR_FG(color), RESET) : printf(" %s ", option);
+    is_selected ? printf("%s[%s%s%s]%s", COLOR_FG(color), ANSI_RESET, option, COLOR_FG(color), ANSI_RESET) : printf(" %s ", option);
 }
 
 CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, Cstr first_option, ...){
     clib_disable_input_buffering();
 
     int selected = 0;
-    size_t size = 0;
     CstrArray options = {0};
 
     if (first_option == NULL) {
@@ -919,7 +1023,6 @@ CLIBAPI int clib_menu(Cstr title, int color, ClibPrintOptionFunc print_option, C
         ANSI_CLEAR_BELOW_CURSOR;
     }
 }
-#endif // CLIB_MENUS
 
 CLIBAPI int clib_eu_mod(int a, int b){
     if (b == 0) {
